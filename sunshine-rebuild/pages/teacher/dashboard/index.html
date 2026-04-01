@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giáo viên | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body>
+
+    <!-- Navbar (injected by injectNavbar) -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Teacher Sub-Nav -->
+    <nav class="teacher-subnav">
+        <div class="container-fluid">
+            <ul class="nav mb-0">
+                <li class="nav-item"><a class="nav-link active" href="/pages/teacher/dashboard/"><i class="fa fa-gauge me-1"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/pages/teacher/students/"><i class="fa fa-users me-1"></i>Học viên</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="teacher-main">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h4 class="mb-0"><i class="fa fa-chalkboard-teacher me-2 text-success"></i>Bảng điều khiển giáo viên</h4>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card stat-card shadow-sm h-100 border-start border-4 border-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted small mb-1">Khóa học phụ trách</p>
+                                    <div class="stat-value" id="statCourses"><span class="spinner-border spinner-border-sm"></span></div>
+                                </div>
+                                <i class="fa fa-book fa-2x text-success opacity-50"></i>
+                            </div>
+                            <a href="/pages/teacher/students/" class="small text-decoration-none mt-2 d-inline-block">Xem học viên →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card stat-card shadow-sm h-100 border-start border-4 border-primary">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted small mb-1">Tổng học viên</p>
+                                    <div class="stat-value" id="statStudents"><span class="spinner-border spinner-border-sm"></span></div>
+                                </div>
+                                <i class="fa fa-users fa-2x text-primary opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card stat-card shadow-sm h-100 border-start border-4 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted small mb-1">Chờ duyệt</p>
+                                    <div class="stat-value" id="statPending"><span class="spinner-border spinner-border-sm"></span></div>
+                                </div>
+                                <i class="fa fa-clock fa-2x text-warning opacity-50"></i>
+                            </div>
+                            <a href="/pages/teacher/students/?status=pending" class="small text-decoration-none mt-2 d-inline-block">Xem →</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="card stat-card shadow-sm h-100 border-start border-4 border-info">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <p class="text-muted small mb-1">Đang học</p>
+                                    <div class="stat-value" id="statActive"><span class="spinner-border spinner-border-sm"></span></div>
+                                </div>
+                                <i class="fa fa-graduation-cap fa-2x text-info opacity-50"></i>
+                            </div>
+                            <a href="/pages/teacher/students/?status=active" class="small text-decoration-none mt-2 d-inline-block">Xem →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Courses list -->
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="mb-0">Khóa học của tôi</h6>
+                        <a href="/pages/teacher/students/" class="small text-decoration-none">Quản lý học viên →</a>
+                    </div>
+                    <div class="row g-3" id="courseCards">
+                        <div class="col-12 text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải...</div>
+                    </div>
+                </div>
+
+                <!-- Calendar sidebar -->
+                <div class="col-lg-4">
+                    <section class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-3">
+                            <h6 class="card-title mb-3"><i class="fa fa-calendar-days me-1 text-success"></i>Lịch dạy</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <button class="btn btn-sm btn-outline-secondary" id="calPrev" aria-label="Tháng trước">
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <h6 class="mb-0 small" id="calMonthYear"></h6>
+                                <button class="btn btn-sm btn-outline-secondary" id="calNext" aria-label="Tháng tới">
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <table class="table table-sm table-bordered text-center mb-2" id="calendarTable">
+                                <thead>
+                                    <tr>
+                                        <th class="small fw-normal">T2</th>
+                                        <th class="small fw-normal">T3</th>
+                                        <th class="small fw-normal">T4</th>
+                                        <th class="small fw-normal">T5</th>
+                                        <th class="small fw-normal">T6</th>
+                                        <th class="small fw-normal text-danger">T7</th>
+                                        <th class="small fw-normal text-danger">CN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendarBody"></tbody>
+                            </table>
+                            <!-- Legend -->
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <span class="d-flex align-items-center gap-1 small text-muted">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:var(--sso-primary, #4361ee);display:inline-block;"></span> Hôm nay
+                                </span>
+                                <span class="d-flex align-items-center gap-1 small text-muted">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:var(--sso-danger, #ef4444);display:inline-block;"></span> Có lịch dạy
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer id="page-footer"></footer>
+    <script type="module" src="./dashboard.ts"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điểm | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav id="main-navbar"></nav>
+
+    <div class="mt-navbar container py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="/index.html">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="/pages/my/dashboard/">Bảng điều khiển</a></li>
+                <li class="breadcrumb-item active">Bảng điểm</li>
+            </ol>
+        </nav>
+
+        <h4 class="fw-bold mb-4"><i class="fa fa-chart-bar text-primary me-2"></i>Bảng Điểm</h4>
+
+        <!-- Loading -->
+        <div id="gradesLoading" class="text-center py-5">
+            <span class="spinner-border text-primary"></span>
+            <p class="mt-2 text-muted">Đang tải danh sách khóa học...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="gradesError" class="d-none">
+            <div class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle me-2"></i>
+                <span id="gradesErrorMsg">Không thể tải bảng điểm.</span>
+            </div>
+        </div>
+
+        <!-- No courses -->
+        <div id="gradesEmpty" class="d-none text-center py-5">
+            <i class="fa fa-graduation-cap fa-3x text-muted mb-3 d-block"></i>
+            <h5 class="text-muted">Bạn chưa đăng ký khóa học nào</h5>
+            <a href="/pages/my/courses/" class="btn btn-outline-primary mt-2">Xem khóa học</a>
+        </div>
+
+        <!-- Grades content -->
+        <div id="gradesContent" class="d-none">
+            <!-- Course selector -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <label for="courseSelect" class="form-label fw-medium">Chọn khóa học</label>
+                    <select id="courseSelect" class="form-select">
+                        <option value="">-- Chọn khóa học --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grade table -->
+            <div id="gradeTableContainer" class="d-none">
+                <div id="gradeTableLoading" class="text-center py-4">
+                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                    <span class="text-muted ms-2">Đang tải điểm từ Moodle...</span>
+                </div>
+                <div id="gradeTableContent" class="d-none">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold" id="gradeCourseName"></h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mục</th>
+                                            <th class="text-center" style="width:120px">Điểm</th>
+                                            <th class="text-center" style="width:100px">Tỷ lệ</th>
+                                            <th class="text-end" style="width:120px">Phản hồi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="gradeTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="gradeTableError" class="d-none">
+                    <div class="alert alert-warning">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <span id="gradeTableErrorMsg">Chưa có điểm cho khóa học này.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="page-footer"></footer>
+
+    <script type="module" src="/pages/my/grades/grades.ts"></script>
+</body>
+</html>

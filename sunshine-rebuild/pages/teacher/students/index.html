@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học viên | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body>
+
+    <!-- Navbar (injected by injectNavbar) -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Teacher Sub-Nav -->
+    <nav class="teacher-subnav">
+        <div class="container-fluid">
+            <ul class="nav mb-0">
+                <li class="nav-item"><a class="nav-link" href="/pages/teacher/dashboard/"><i class="fa fa-gauge me-1"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/pages/teacher/students/"><i class="fa fa-users me-1"></i>Học viên</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="teacher-main">
+        <div class="container-fluid">
+
+            <!-- Header row -->
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <a href="/pages/teacher/dashboard/" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-arrow-left me-1"></i>Dashboard
+                    </a>
+                    <h4 class="mb-0"><i class="fa fa-users me-2 text-success"></i>Quản lý học viên</h4>
+                </div>
+            </div>
+
+            <!-- Filters bar -->
+            <div class="row g-2 mb-3 align-items-end">
+                <div class="col-sm-6 col-lg-4">
+                    <label class="form-label small mb-1">Khóa học</label>
+                    <select class="form-select form-select-sm" id="filterCourse">
+                        <option value="">Tất cả khóa học</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label small mb-1">Trạng thái</label>
+                    <select class="form-select form-select-sm" id="filterStatus">
+                        <option value="">Tất cả</option>
+                        <option value="pending">Chờ duyệt</option>
+                        <option value="active">Đã duyệt</option>
+                        <option value="inprogress">Đang học</option>
+                        <option value="completed">Hoàn thành</option>
+                        <option value="revoked">Đã thu hồi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-medium">Danh sách học viên</span>
+                    <span class="badge bg-secondary" id="totalBadge">—</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th class="d-none d-md-table-cell">Khóa học</th>
+                                <th>Trạng thái</th>
+                                <th>Tiến độ</th>
+                                <th class="d-none d-lg-table-cell">Ngày đăng ký</th>
+                                <th class="d-none d-lg-table-cell">Hết hạn</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="enrollTableBody">
+                            <tr><td colspan="7" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer py-2" id="paginationWrap"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Enrollment Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="editModalLabel"><i class="fa fa-pen me-2"></i>Cập nhật học viên</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div id="editStudentInfo" class="text-muted small mb-3"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="editStatus">Trạng thái</label>
+                        <select class="form-select" id="editStatus">
+                            <option value="pending">Chờ duyệt</option>
+                            <option value="active">Đã duyệt</option>
+                            <option value="inprogress">Đang học</option>
+                            <option value="completed">Hoàn thành</option>
+                            <option value="revoked">Thu hồi</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="editProgress">Tiến độ: <span id="editProgressLabel">0</span>%</label>
+                        <input type="range" class="form-range" id="editProgress" min="0" max="100" step="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="editNote">Ghi chú giáo viên</label>
+                        <textarea class="form-control" id="editNote" rows="3" maxlength="500" placeholder="Nhận xét về học viên..."></textarea>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label" for="editExpiry">Ngày hết hạn</label>
+                        <input type="date" class="form-control" id="editExpiry">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" id="saveEditBtn">
+                        <span id="saveEditSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
+                        <i class="fa fa-save me-1" id="saveEditIcon"></i>Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer id="page-footer"></footer>
+    <script type="module" src="./students.ts"></script>
+</body>
+</html>

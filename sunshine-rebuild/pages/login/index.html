@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar fixed-top navbar-light bg-white shadow">
+        <div class="container-fluid">
+            <a href="/index.html" class="navbar-brand d-flex align-items-center m-0 me-4 p-0">
+                <img src="/images/logo.jpg" class="logo me-1" alt="SSO" height="40">
+            </a>
+            <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-2">
+                <div class="dropdown">
+                    <a href="#" class="btn dropdown-toggle" id="langToggle" data-bs-toggle="dropdown" aria-label="Ngôn ngữ">
+                        <i class="fa fa-language me-1"></i>
+                        <span class="d-none d-sm-inline" data-i18n="nav.language">Vietnamese ‎(vi)‎</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-lang="en">English ‎(en)‎</a></li>
+                        <li><a class="dropdown-item" href="#" data-lang="vi">Vietnamese ‎(vi)‎</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login / Register Form -->
+    <main class="mt-navbar d-flex align-items-center justify-content-center min-vh-100 py-5">
+        <div class="card shadow" style="max-width: 480px; width: 100%;">
+            <div class="card-body p-4">
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="authTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="loginTab" data-bs-toggle="tab" data-bs-target="#loginPane" type="button" role="tab" data-i18n="auth.login">Đăng nhập</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="registerTab" data-bs-toggle="tab" data-bs-target="#registerPane" type="button" role="tab" data-i18n="auth.register">Đăng ký</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- LOGIN PANE -->
+                    <div class="tab-pane fade show active" id="loginPane" role="tabpanel">
+                        <div id="loginError" class="alert alert-danger d-none mb-3" role="alert"></div>
+
+                        <form id="loginForm" novalidate>
+                            <div class="mb-3">
+                                <label for="username" class="form-label" data-i18n="auth.username">Tên đăng nhập</label>
+                                <input type="text" class="form-control" id="username" name="username" required autocomplete="username">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label" data-i18n="auth.password">Mật khẩu</label>
+                                <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
+                                <label class="form-check-label" for="rememberMe" data-i18n="auth.remember">Ghi nhớ tên đăng nhập</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 mb-3" data-i18n="auth.login">Đăng nhập</button>
+                        </form>
+
+                        <div class="text-center mb-3">
+                            <a href="/pages/forgot-password/" data-i18n="auth.forgot">Bạn quên mật khẩu?</a>
+                        </div>
+
+                        <hr>
+
+                        <div class="text-center">
+                            <p class="mb-2 text-muted small" data-i18n="auth.first_time">Lần đầu tiên vào trang này?</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="guestLoginBtn" data-i18n="auth.guest">
+                                Đăng nhập với tư cách khách
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- REGISTER PANE -->
+                    <div class="tab-pane fade" id="registerPane" role="tabpanel">
+                        <div id="registerError" class="alert alert-danger d-none mb-3" role="alert"></div>
+                        <div id="registerSuccess" class="alert alert-success d-none mb-3" role="alert"></div>
+
+                        <form id="registerForm" novalidate>
+                            <div class="row g-2 mb-3">
+                                <div class="col">
+                                    <label for="regFirstName" class="form-label" data-i18n="auth.first_name">Họ</label>
+                                    <input type="text" class="form-control" id="regFirstName" name="firstName" required autocomplete="given-name">
+                                </div>
+                                <div class="col">
+                                    <label for="regLastName" class="form-label" data-i18n="auth.last_name">Tên</label>
+                                    <input type="text" class="form-control" id="regLastName" name="lastName" required autocomplete="family-name">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="regUsername" class="form-label" data-i18n="auth.username">Tên đăng nhập</label>
+                                <input type="text" class="form-control" id="regUsername" name="username" required autocomplete="username"
+                                    pattern="[a-zA-Z0-9_.\-]{3,100}" title="3–100 ký tự, chỉ gồm chữ, số, dấu chấm, gạch dưới, gạch ngang">
+                                <div class="form-text" data-i18n="auth.username_hint">3–100 ký tự, chỉ gồm chữ, số, _ . -</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="regEmail" class="form-label" data-i18n="auth.email">Email</label>
+                                <input type="email" class="form-control" id="regEmail" name="email" required autocomplete="email">
+                            </div>
+                            <div class="mb-3">
+                                <label for="regPassword" class="form-label" data-i18n="auth.password">Mật khẩu</label>
+                                <input type="password" class="form-control" id="regPassword" name="password" required autocomplete="new-password" minlength="6">
+                                <div class="form-text" data-i18n="auth.password_hint">Ít nhất 6 ký tự</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="regPasswordConfirm" class="form-label" data-i18n="auth.confirm_password">Xác nhận mật khẩu</label>
+                                <input type="password" class="form-control" id="regPasswordConfirm" name="passwordConfirm" required autocomplete="new-password">
+                            </div>
+                            <button type="submit" class="btn btn-success w-100" data-i18n="auth.register">Đăng ký</button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="/pages/login/login.ts"></script>
+</body>
+</html>

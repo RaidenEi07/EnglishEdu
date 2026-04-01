@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều khiển | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="pagelayout-mydashboard">
+
+    <!-- Navbar (injected by injectNavbar) -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Page wrapper -->
+    <div class="page-wrapper mt-navbar">
+
+        <!-- Page header -->
+        <header class="bg-white border-bottom py-3">
+            <div class="container-fluid">
+                <h1 class="h2 mb-0" data-i18n="nav.dashboard">Bảng Điều khiển</h1>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="container-fluid py-4">
+            <div class="row g-4">
+
+                <!-- Main column -->
+                <div class="col-lg-8" id="dashboardMain">
+
+                    <!-- Timeline block -->
+                    <section class="card border-0 shadow-sm mb-4" id="blockTimeline">
+                        <div class="card-body p-3">
+                            <h3 class="h5 card-title mb-3" data-i18n="dashboard.timeline">Mốc thời gian</h3>
+
+                            <!-- Filter row -->
+                            <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timelineDateFilter">
+                                        <span data-i18n="dashboard.next_7_days">Next 7 days</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" data-days="all" data-i18n="dashboard.filter_all">Tất cả</a></li>
+                                        <li><a class="dropdown-item" href="#" data-days="overdue" data-i18n="dashboard.filter_overdue">Quá hạn</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item active" href="#" data-days="7" data-i18n="dashboard.next_7_days">Next 7 days</a></li>
+                                        <li><a class="dropdown-item" href="#" data-days="30" data-i18n="dashboard.next_30_days">Next 30 days</a></li>
+                                        <li><a class="dropdown-item" href="#" data-days="90" data-i18n="dashboard.next_3_months">Next 3 months</a></li>
+                                        <li><a class="dropdown-item" href="#" data-days="180" data-i18n="dashboard.next_6_months">Next 6 months</a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timelineSortBtn">
+                                        <span data-i18n="dashboard.sort_by_dates">Sort by dates</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item active" href="#" data-sort="dates" data-i18n="dashboard.sort_by_dates">Sort by dates</a></li>
+                                        <li><a class="dropdown-item" href="#" data-sort="courses" data-i18n="dashboard.sort_by_courses">Sort by courses</a></li>
+                                    </ul>
+                                </div>
+                                <div class="input-group input-group-sm flex-grow-1" style="min-width:150px;max-width:280px;">
+                                    <input type="text" class="form-control" id="timelineSearch" placeholder="Search by activity type or name" data-i18n-placeholder="dashboard.search_activity">
+                                    <button class="btn btn-outline-secondary d-none" type="button" id="timelineSearchClear"><i class="fa fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <hr class="mt-0 mb-3">
+
+                            <!-- Timeline content -->
+                            <div id="timelineContent">
+                                <div class="text-center py-4">
+                                    <img src="/images/course-placeholder.svg" alt="" style="height:70px;width:70px;opacity:.4">
+                                    <p class="text-muted mt-2 mb-0" data-i18n="dashboard.no_activities">No activities require action</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Calendar block -->
+                    <section class="card border-0 shadow-sm mb-4" id="blockCalendar">
+                        <div class="card-body p-3">
+                            <h3 class="h5 card-title mb-3" data-i18n="dashboard.calendar">Lịch</h3>
+                            <!-- Calendar header -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <button class="btn btn-sm btn-outline-secondary" id="calPrev" aria-label="Tháng trước">
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <h4 class="h6 mb-0" id="calMonthYear"></h4>
+                                <button class="btn btn-sm btn-outline-secondary" id="calNext" aria-label="Tháng tới">
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <!-- Calendar table -->
+                            <table class="table table-sm table-bordered text-center mb-2" id="calendarTable">
+                                <thead>
+                                    <tr>
+                                        <th class="small fw-normal" data-i18n="dashboard.cal_mon">T2</th>
+                                        <th class="small fw-normal" data-i18n="dashboard.cal_tue">T3</th>
+                                        <th class="small fw-normal" data-i18n="dashboard.cal_wed">T4</th>
+                                        <th class="small fw-normal" data-i18n="dashboard.cal_thu">T5</th>
+                                        <th class="small fw-normal" data-i18n="dashboard.cal_fri">T6</th>
+                                        <th class="small fw-normal text-danger" data-i18n="dashboard.cal_sat">T7</th>
+                                        <th class="small fw-normal text-danger" data-i18n="dashboard.cal_sun">CN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendarBody"></tbody>
+                            </table>
+                            <div class="calendar-legend">
+                                <span class="legend-item"><span class="legend-dot legend-dot--event"></span> Có lịch</span>
+                                <span class="legend-item"><span class="legend-dot legend-dot--today"></span> Hôm nay</span>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button class="btn btn-sm btn-outline-primary" id="calNewEvent" data-i18n="dashboard.new_event">Sự kiện mới</button>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- Right sidebar -->
+                <div class="col-lg-4">
+
+                    <!-- Recently accessed items -->
+                    <section class="card border-0 shadow-sm mb-4" id="blockRecentItems">
+                        <div class="card-body p-3">
+                            <h3 class="h5 card-title mb-3" data-i18n="dashboard.recent_items">Mục được truy cập gần đây</h3>
+                            <div id="recentItemsList">
+                                <!-- Loading skeleton -->
+                                <div id="recentItemsSkeleton">
+                                    <div class="d-flex align-items-center mb-3" data-skeleton>
+                                        <div class="skeleton rounded" style="width:40px;height:40px;flex-shrink:0;"></div>
+                                        <div class="ps-2 flex-fill">
+                                            <div class="skeleton w-100 mb-1" style="height:.85rem;"></div>
+                                            <div class="skeleton w-75" style="height:.7rem;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-3" data-skeleton>
+                                        <div class="skeleton rounded" style="width:40px;height:40px;flex-shrink:0;"></div>
+                                        <div class="ps-2 flex-fill">
+                                            <div class="skeleton w-100 mb-1" style="height:.85rem;"></div>
+                                            <div class="skeleton w-75" style="height:.7rem;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-3" data-skeleton>
+                                        <div class="skeleton rounded" style="width:40px;height:40px;flex-shrink:0;"></div>
+                                        <div class="ps-2 flex-fill">
+                                            <div class="skeleton w-100 mb-1" style="height:.85rem;"></div>
+                                            <div class="skeleton w-75" style="height:.7rem;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Real content rendered by JS -->
+                                <div class="d-none" id="recentItemsContent"></div>
+                                <div class="text-center text-muted py-3 d-none" id="recentItemsEmpty">
+                                    <img src="/images/course-placeholder.svg" alt="" style="height:50px;width:50px;opacity:.4" class="d-block mx-auto mb-2">
+                                    <small data-i18n="dashboard.no_recent_items">Không có mục nào gần đây</small>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Student courses list -->
+                    <section class="card border-0 shadow-sm mb-4" id="blockStudentList">
+                        <div class="card-body p-3">
+                            <h3 class="h5 card-title mb-3">Danh sách học sinh</h3>
+                            <!-- Loading skeleton -->
+                            <div id="studentListSkeleton">
+                                <div class="d-flex align-items-center mb-2" data-skeleton>
+                                    <div class="skeleton rounded" style="width:32px;height:32px;flex-shrink:0;"></div>
+                                    <div class="ps-2 flex-fill">
+                                        <div class="skeleton w-100 mb-1" style="height:.8rem;"></div>
+                                        <div class="skeleton w-50" style="height:.65rem;"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2" data-skeleton>
+                                    <div class="skeleton rounded" style="width:32px;height:32px;flex-shrink:0;"></div>
+                                    <div class="ps-2 flex-fill">
+                                        <div class="skeleton w-100 mb-1" style="height:.8rem;"></div>
+                                        <div class="skeleton w-50" style="height:.65rem;"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center mb-2" data-skeleton>
+                                    <div class="skeleton rounded" style="width:32px;height:32px;flex-shrink:0;"></div>
+                                    <div class="ps-2 flex-fill">
+                                        <div class="skeleton w-100 mb-1" style="height:.8rem;"></div>
+                                        <div class="skeleton w-50" style="height:.65rem;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="studentListContent" class="d-none"></div>
+                            <div id="studentListEmpty" class="text-center text-muted py-3 d-none">
+                                <img src="/images/course-placeholder.svg" alt="" style="height:40px;width:40px;opacity:.4" class="d-block mx-auto mb-2">
+                                <small>Chưa đăng ký khóa học nào</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Progress summary -->
+                    <section class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-3">
+                            <h3 class="h5 card-title mb-3" data-i18n="dashboard.progress">Tiến độ học tập</h3>
+                            <div id="progressSummary">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted" data-i18n="dashboard.completed">Đã hoàn thành</small>
+                                    <small class="fw-bold" id="progressLabel">0/0</small>
+                                </div>
+                                <div class="progress mb-3" style="height:8px;">
+                                    <div class="progress-bar bg-success" id="progressBar" role="progressbar" style="width:0%"></div>
+                                </div>
+                                <div class="row text-center g-2">
+                                    <div class="col-4">
+                                        <div class="p-2 rounded bg-light">
+                                            <div class="fw-bold fs-5 text-primary" id="statEnrolled">0</div>
+                                            <small class="text-muted" data-i18n="dashboard.stat_enrolled">Đăng ký</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 rounded bg-light">
+                                            <div class="fw-bold fs-5 text-warning" id="statInProgress">0</div>
+                                            <small class="text-muted" data-i18n="dashboard.stat_progress">Đang học</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 rounded bg-light">
+                                            <div class="fw-bold fs-5 text-success" id="statDone">0</div>
+                                            <small class="text-muted" data-i18n="dashboard.stat_done">Hoàn thành</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer (injected by footer.ts) -->
+        <footer id="page-footer"></footer>
+    </div>
+
+    <script type="module" src="/pages/my/dashboard/dashboard.ts"></script>
+</body>
+</html>

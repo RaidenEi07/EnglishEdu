@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Các khoá học của tôi | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="pagelayout-mycourses">
+
+    <!-- Navbar (injected by injectNavbar) -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Page wrapper -->
+    <div class="page-wrapper mt-navbar">
+
+        <!-- Page header -->
+        <header class="bg-white border-bottom py-3">
+            <div class="container-fluid">
+                <h1 class="h2 mb-0" data-i18n="nav.my_courses">Các khoá học của tôi</h1>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="container-fluid py-4">
+
+            <!-- Course overview block -->
+            <section class="card border-0 shadow-sm" id="blockCourseOverview">
+                <div class="card-body p-3">
+                    <h3 class="h5 card-title mb-3" data-i18n="my_courses.overview">Tổng quan về khóa học</h3>
+
+                    <!-- Filter toolbar -->
+                    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                        <!-- Status filter group -->
+                        <div class="btn-group flex-wrap" role="group" aria-label="Course filter">
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-all" value="all" checked>
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-all">Tất cả</label>
+
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-pending" value="pending">
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-pending">Chờ duyệt</label>
+
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-active" value="active">
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-active">Đã duyệt</label>
+
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-inprogress" value="inprogress">
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-inprogress">Đang học</label>
+
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-completed" value="completed">
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-completed">Hoàn thành</label>
+
+                            <input type="radio" class="btn-check" name="statusFilter" id="filter-starred" value="starred">
+                            <label class="btn btn-outline-secondary btn-sm" for="filter-starred">Gắn sao</label>
+                        </div>
+
+                        <div class="ms-auto d-flex gap-2 align-items-center">
+                            <!-- Sort -->
+                            <select class="form-select form-select-sm" id="sortSelect" style="max-width:170px;" aria-label="Sort courses">
+                                <option value="title" data-i18n="my_courses.sort_title">Tên A–Z</option>
+                                <option value="lastaccess" data-i18n="my_courses.sort_recent">Truy cập gần đây</option>
+                            </select>
+
+                            <!-- View toggle -->
+                            <div class="btn-group" role="group" aria-label="View mode">
+                                <button type="button" class="btn btn-outline-secondary btn-sm active" id="viewCard" title="Card">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="viewList" title="List">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="viewSummary" title="Summary">
+                                    <i class="fas fa-align-left"></i>
+                                </button>
+                            </div>
+
+                            <!-- Search -->
+                            <div class="input-group input-group-sm" style="max-width:220px;">
+                                <input type="search" class="form-control" id="courseSearch" placeholder="Tìm kiếm" aria-label="Search courses">
+                                <button class="btn btn-outline-secondary" type="button"><i class="fa fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="mt-0 mb-3">
+
+                    <!-- Courses grid -->
+                    <div class="row g-3" id="myCoursesGrid">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Empty state -->
+                    <div class="text-center py-5" id="myCoursesEmpty">
+                        <img src="/images/course-placeholder.svg" alt="" style="height:80px;width:80px;opacity:.4" class="d-block mx-auto mb-3">
+                        <p class="text-muted" data-i18n="my_courses.empty_not_enrolled">Bạn chưa đăng ký khoá học nào.</p>
+                        <p class="text-muted small" data-i18n="my_courses.empty_hint">Sau khi bạn đăng ký khoá học, khoá học đó sẽ hiển thị ở đây.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer (injected by footer.ts) -->
+        <footer id="page-footer"></footer>
+    </div>
+
+    <script type="module" src="/pages/my/courses/courses.ts"></script>
+
+    <!-- Progress Update Modal -->
+    <div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="progressModalLabel"><i class="fa fa-chart-line me-2"></i>Cập nhật tiến độ</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3" id="progressModalCourseName"></p>
+                    <label class="form-label">Tiến độ: <span id="progressModalLabel2" class="fw-bold">0</span>%</label>
+                    <input type="range" class="form-range" id="progressModalSlider" min="0" max="100" step="5">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="progressModalSave">
+                        <span class="spinner-border spinner-border-sm me-1 d-none" id="progressModalSpinner"></span>Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

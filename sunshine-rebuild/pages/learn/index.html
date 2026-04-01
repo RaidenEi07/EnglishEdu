@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học bài | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Loading -->
+    <div id="learnLoading" class="text-center py-5 mt-5">
+        <span class="spinner-border text-primary" style="width:3rem;height:3rem;"></span>
+        <p class="mt-3 text-muted">Đang tải khóa học...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="learnError" class="d-none container py-5 mt-5">
+        <div class="alert alert-danger">
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            <span id="learnErrorMsg">Không tìm thấy khóa học.</span>
+        </div>
+        <a href="/pages/my/courses/" class="btn btn-outline-primary">← Quay lại khóa học của tôi</a>
+    </div>
+
+    <!-- Main Learn Layout -->
+    <div id="learnContainer" class="d-none">
+        <!-- Top bar -->
+        <div class="learn-topbar d-flex align-items-center px-3 py-2 bg-white border-bottom shadow-sm">
+            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-3 d-lg-none">
+                <i class="fa fa-bars"></i>
+            </button>
+            <a href="/pages/my/courses/" class="text-decoration-none text-muted me-2">
+                <i class="fa fa-arrow-left"></i>
+            </a>
+            <h6 id="courseTitle" class="mb-0 text-truncate flex-grow-1"></h6>
+            <div class="d-flex align-items-center gap-2">
+                <span id="progressBadge" class="badge bg-primary bg-opacity-10 text-primary d-none"></span>
+                <a id="moodleDirectLink" href="#" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-sm btn-outline-secondary d-none" title="Mở trong Moodle">
+                    <i class="fa fa-external-link-alt"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="learn-body d-flex">
+            <!-- Sidebar -->
+            <aside id="learnSidebar" class="learn-sidebar bg-white border-end">
+                <div class="p-3 border-bottom">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent"><i class="fa fa-search text-muted"></i></span>
+                        <input type="text" id="moduleSearch" class="form-control" placeholder="Tìm bài học...">
+                    </div>
+                </div>
+                <div id="sidebarContent" class="sidebar-modules overflow-auto">
+                    <!-- Populated by JS: sections + modules -->
+                </div>
+            </aside>
+
+            <!-- Sidebar overlay for mobile -->
+            <div id="sidebarOverlay" class="sidebar-overlay d-none"></div>
+
+            <!-- Main content area -->
+            <main id="learnMain" class="learn-main flex-grow-1 overflow-auto">
+                <!-- Welcome / placeholder -->
+                <div id="contentWelcome" class="text-center py-5">
+                    <i class="fa fa-book-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Chọn một bài học từ menu bên trái để bắt đầu</h5>
+                </div>
+
+                <!-- Content loading -->
+                <div id="contentLoading" class="d-none text-center py-5">
+                    <span class="spinner-border text-primary"></span>
+                    <p class="mt-2 text-muted">Đang tải nội dung...</p>
+                </div>
+
+                <!-- Content error -->
+                <div id="contentError" class="d-none container py-4">
+                    <div class="alert alert-warning">
+                        <i class="fa fa-exclamation-triangle me-2"></i>
+                        <span id="contentErrorMsg">Không thể tải nội dung.</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic content rendered here -->
+                <div id="contentArea" class="d-none p-4">
+                    <div id="contentBody"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer id="page-footer"></footer>
+
+    <script type="module" src="/pages/learn/learn.ts"></script>
+</body>
+</html>

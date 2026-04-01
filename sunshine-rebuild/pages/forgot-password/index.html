@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quên mật khẩu | Sunshine School Online</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar fixed-top navbar-light bg-white shadow">
+        <div class="container-fluid">
+            <a href="/index.html" class="navbar-brand d-flex align-items-center m-0 me-4 p-0">
+                <img src="/images/logo.jpg" class="logo me-1" alt="SSO" height="40">
+            </a>
+        </div>
+    </nav>
+
+    <!-- Forgot Password / Reset Password -->
+    <main class="mt-navbar d-flex align-items-center justify-content-center min-vh-100 py-5">
+        <div class="card shadow" style="max-width: 500px; width: 100%;">
+            <div class="card-body p-4">
+
+                <!-- Step 1: Search by username / email -->
+                <div id="step1Section">
+                    <h2 class="card-title text-center mb-3" data-i18n="auth.reset_password">Đặt lại mật khẩu</h2>
+                    <p class="text-muted text-center mb-4" data-i18n="auth.search_by">
+                        Tìm kiếm theo tên đăng nhập hoặc email
+                    </p>
+                    <div id="forgotMessage" class="d-none mb-3"></div>
+                    <form id="forgotPasswordForm" novalidate>
+                        <div class="mb-3">
+                            <label for="searchUsername" class="form-label" data-i18n="auth.username">Tên đăng nhập</label>
+                            <input type="text" class="form-control" id="searchUsername" name="username" autocomplete="username">
+                        </div>
+                        <div class="mb-3">
+                            <label for="searchEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="searchEmail" name="email" autocomplete="email">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" data-i18n="auth.reset_password">Đặt lại mật khẩu</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="/pages/login/" data-i18n="auth.login">Đăng nhập</a>
+                    </div>
+                </div>
+
+                <!-- Step 2: Set new password (shown when ?token= is in URL) -->
+                <div id="step2Section" class="d-none">
+                    <h2 class="card-title text-center mb-3">Đặt mật khẩu mới</h2>
+                    <p class="text-muted text-center mb-4">Nhập mật khẩu mới của bạn</p>
+                    <div id="resetMessage" class="d-none mb-3"></div>
+                    <form id="resetPasswordForm" novalidate>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="newPassword"
+                                   autocomplete="new-password" placeholder="Ít nhất 8 ký tự">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                            <input type="password" class="form-control" id="confirmPassword"
+                                   autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Xác nhận</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="/pages/login/" data-i18n="auth.login">Đăng nhập</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="/pages/forgot-password/forgot-password.ts"></script>
+</body>
+</html>
