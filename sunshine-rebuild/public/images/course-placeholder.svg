@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250">
+  <rect width="400" height="250" fill="#e9ecef"/>
+  <text x="200" y="120" font-family="Arial,sans-serif" font-size="18" fill="#6c757d" text-anchor="middle">Course Image</text>
+  <text x="200" y="145" font-family="Arial,sans-serif" font-size="14" fill="#adb5bd" text-anchor="middle">400 × 250</text>
+</svg>

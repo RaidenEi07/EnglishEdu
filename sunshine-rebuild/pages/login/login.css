@@ -1,0 +1,48 @@
+/* Auth page styles (login + register) */
+
+body:has(#loginForm) {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(30, 41, 59, 0.65), rgba(67, 97, 238, 0.45)),
+    url('/images/loginbg.png') center / cover no-repeat fixed;
+  display: flex;
+  flex-direction: column;
+}
+
+body:has(#loginForm) .card {
+  border: none;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.95);
+  animation: fadeInUp 0.6s ease-out;
+  overflow: hidden;
+}
+
+body:has(#loginForm) .login-logo {
+  max-height: 52px;
+  width: auto;
+  transition: transform var(--transition-bounce);
+}
+
+body:has(#loginForm) .login-logo:hover {
+  transform: scale(1.05);
+}
+
+body:has(#loginForm) h3,
+body:has(#loginForm) h4 {
+  font-weight: var(--sso-heading-weight);
+  color: var(--sso-dark);
+}
+
+body:has(#loginForm) .btn-primary,
+body:has(#loginForm) .btn-success {
+  padding: 0.6rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+body:has(#loginForm) .form-control {
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+}

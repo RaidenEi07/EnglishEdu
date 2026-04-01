@@ -1,0 +1,137 @@
+/* =============================================
+   Responsive Breakpoints
+   ============================================= */
+
+/* ── Large desktop (≥ 1400px) ─────────────── */
+@media (min-width: 1400px) {
+    /* Increase content max-width for wider screens */
+    .container-fluid { max-width: 1400px; }
+
+    /* Course grid: 4 columns for better use of space */
+    .course-item { flex: 0 0 25%; max-width: 25%; }
+
+    /* Dashboard: wider main column */
+    .pagelayout-mydashboard .col-lg-8 { flex: 0 0 70%; max-width: 70%; }
+    .pagelayout-mydashboard .col-lg-4 { flex: 0 0 30%; max-width: 30%; }
+
+    /* Learn page: wider sidebar on big screens */
+    .learn-sidebar { width: 360px; min-width: 360px; }
+}
+
+/* ── Extra-large desktop (≥ 1600px) ─────────── */
+@media (min-width: 1600px) {
+    .container-fluid { max-width: 100%; }
+
+    /* More breathing room for admin tables */
+    .admin-main .table { font-size: 0.9rem; }
+    .admin-main .table td, .admin-main .table th { padding: 0.65rem 0.85rem; }
+
+    /* Larger stat cards */
+    .stat-card .fs-3 { font-size: 2rem !important; }
+}
+
+/* ── Ultrawide (≥ 1920px) ─────────────────── */
+@media (min-width: 1920px) {
+    .container-fluid { max-width: 1800px; }
+
+    /* Prevent content from being too wide for readability */
+    .card-body p, .card-body .text-muted { max-width: 80ch; }
+}
+
+/* ── Tablet & below (≤ 991.98px) ─────────── */
+@media (max-width: 991.98px) {
+    .navbar .dropdown-menu {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        animation: none;
+    }
+}
+
+@media (max-width: 767.98px) {
+    #hero-slider .carousel-item img {
+        max-height: 250px;
+    }
+
+    #hero-slider {
+        border-radius: 0;
+    }
+
+    #feature .display-6 {
+        font-size: 1.5rem;
+    }
+
+    .course-card .card-img-wrapper {
+        height: 130px;
+    }
+
+    /* Admin / Teacher tables: reduce padding on mobile */
+    .table td, .table th {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    /* Stack section padding */
+    section {
+        padding-top: var(--space-2xl) !important;
+        padding-bottom: var(--space-2xl) !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .navbar .logo {
+        max-height: 32px;
+    }
+
+    /* Stack cards full-width */
+    .my-course-item { flex: 0 0 100%; max-width: 100%; }
+
+    .course-card .card-body {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    /* Hero carousel controls hidden on small */
+    #hero-slider .carousel-control-prev,
+    #hero-slider .carousel-control-next {
+        display: none;
+    }
+}
+
+/* ── Accessibility ────────────────────────── */
+/* Skip-to-content link */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    z-index: 2000;
+    padding: 0.5rem 1rem;
+    background: var(--sso-primary);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 0 0 var(--radius-sm) 0;
+    font-weight: 500;
+}
+.skip-link:focus {
+    top: 0;
+}
+
+/* Visible focus ring for keyboard navigation */
+:focus-visible {
+    outline: 2px solid var(--sso-primary);
+    outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    [data-animate] {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

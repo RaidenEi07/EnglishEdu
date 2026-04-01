@@ -1,0 +1,76 @@
+/* =============================================
+   Hero Slider
+   ============================================= */
+#hero-slider {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+#hero-slider .carousel-item img {
+    max-height: 850px;
+    object-fit: contain;
+    transition: transform 8s linear;
+}
+
+#hero-slider .carousel-item.active img {
+    transform: scale(1.03);
+}
+
+/* Gradient overlay for text readability */
+#hero-slider .carousel-caption {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-2xl) var(--space-xl) var(--space-xl);
+    text-align: left;
+}
+
+#hero-slider .carousel-caption h2,
+#hero-slider .carousel-caption h3 {
+    font-weight: var(--sso-heading-weight);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Carousel indicators */
+#hero-slider .carousel-indicators [data-bs-target] {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    border: none;
+    opacity: 0.5;
+    transition: all var(--transition-normal);
+}
+
+#hero-slider .carousel-indicators .active {
+    opacity: 1;
+    width: 28px;
+    background: var(--sso-primary);
+}
+
+/* Carousel controls */
+#hero-slider .carousel-control-prev,
+#hero-slider .carousel-control-next {
+    width: 48px;
+    height: 48px;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-full);
+    margin: 0 var(--space-md);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+#hero-slider:hover .carousel-control-prev,
+#hero-slider:hover .carousel-control-next {
+    opacity: 1;
+}
+
+#hero-slider .carousel-control-prev:hover,
+#hero-slider .carousel-control-next:hover {
+    background: rgba(255, 255, 255, 0.4);
+}

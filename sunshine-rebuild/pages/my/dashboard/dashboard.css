@@ -1,0 +1,125 @@
+/* Dashboard page styles */
+
+.mt-navbar { margin-top: var(--navbar-height); }
+
+.pagelayout-mydashboard .page-wrapper {
+  min-height: calc(100vh - var(--navbar-height));
+  background: var(--sso-body-bg);
+}
+
+/* -- User initials avatar ---------------------------------------- */
+.user-initials {
+  font-family: var(--sso-font);
+  letter-spacing: .5px;
+}
+
+/* -- Card blocks ------------------------------------------------- */
+.card.border-0.shadow-sm {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+
+.card.border-0.shadow-sm:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-title { font-weight: 600; }
+
+/* -- Timeline block ---------------------------------------------- */
+#blockTimeline .dropdown-toggle { font-size: .85rem; }
+#blockTimeline hr { border-color: var(--sso-border); }
+#timelineSearch { font-size: .85rem; }
+
+/* -- Calendar ---------------------------------------------------- */
+#calendarTable th {
+  font-size: var(--sso-font-size-xs);
+  padding: .4rem .2rem;
+  color: var(--sso-secondary);
+}
+#calendarTable td {
+  font-size: .8rem;
+  padding: .35rem .2rem;
+  vertical-align: middle;
+  transition: background var(--transition-fast);
+}
+#calendarTable td:hover {
+  background: var(--sso-primary-bg);
+  border-radius: var(--radius-sm);
+}
+#calendarTable td .bg-primary {
+  font-size: var(--sso-font-size-xs);
+  border-radius: var(--radius-full);
+}
+
+/* Schedule day markers */
+#calendarTable td.has-schedule {
+  background: rgba(239, 68, 68, 0.08);
+  cursor: pointer;
+}
+.schedule-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sso-danger, #ef4444);
+  margin: 2px auto 0;
+}
+
+/* Calendar legend */
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--sso-font-size-xs);
+  color: var(--sso-secondary);
+  padding-top: var(--space-sm);
+}
+.calendar-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.calendar-legend .legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.calendar-legend .legend-dot--event { background: var(--sso-danger, #ef4444); }
+.calendar-legend .legend-dot--today { background: var(--sso-primary, #4361ee); }
+
+/* -- Recently accessed items ------------------------------------- */
+#recentItemsList a {
+  transition: background var(--transition-fast);
+}
+#recentItemsList a:hover {
+  background: var(--sso-primary-bg);
+  border-radius: var(--radius-sm);
+}
+
+/* -- Welcome banner ---------------------------------------------- */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--sso-primary) 0%, var(--sso-primary-dark) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-2xl);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  top: -50px;
+  right: -30px;
+}
+
+/* -- Responsive -------------------------------------------------- */
+@media (max-width: 767.98px) {
+  .primary-navigation { display: none; }
+}

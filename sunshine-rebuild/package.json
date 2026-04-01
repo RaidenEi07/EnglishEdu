@@ -1,0 +1,38 @@
+{
+  "name": "sunshine-school-online",
+  "version": "1.0.0",
+  "description": "Sunshine School Online - Nền tảng học tiếng Anh IELTS & Cambridge trực tuyến",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint:css": "stylelint \"src/styles/**/*.css\"",
+    "lint:js": "eslint \"src/js/**/*.js\"",
+    "lint": "npm run lint:css && npm run lint:js"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.12.0",
+    "jsdom": "^26.0.0",
+    "stylelint": "^16.12.0",
+    "stylelint-config-standard": "^37.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "dompurify": "^3.3.3"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

@@ -1,0 +1,72 @@
+/* =============================================
+   Reset & Base Styles
+   ============================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--sso-font);
+    font-size: var(--sso-font-size-base);
+    color: var(--sso-dark);
+    line-height: var(--sso-line-height);
+    background-color: var(--sso-white);
+    overflow-x: hidden;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+a {
+    color: var(--sso-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--sso-primary-dark);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--sso-font-heading);
+    font-weight: var(--sso-heading-weight);
+    color: var(--sso-dark);
+    line-height: 1.3;
+}
+
+/* Navbar spacing utility */
+.mt-navbar {
+    margin-top: var(--navbar-height);
+}
+
+/* Selection highlight */
+::selection {
+    background: var(--sso-primary);
+    color: white;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--sso-light);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--sso-border);
+    border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--sso-secondary);
+}

@@ -1,0 +1,111 @@
+/* =============================================
+   Loading States - Skeletons & Spinners
+   ============================================= */
+
+/* Skeleton placeholder animation (uses shimmer from _animations.css) */
+.skeleton {
+  background: linear-gradient(90deg, var(--sso-border) 25%, var(--sso-light) 50%, var(--sso-border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+  height: 0.85rem;
+  margin-bottom: var(--space-sm);
+  width: 80%;
+}
+
+.skeleton-text.short { width: 40%; }
+.skeleton-text.medium { width: 60%; }
+
+.skeleton-card {
+  height: 240px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+}
+
+.skeleton-row {
+  height: 48px;
+  margin-bottom: var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-btn {
+  height: 38px;
+  width: 100px;
+  border-radius: var(--radius-sm);
+}
+
+/* Page-level loading overlay */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  gap: var(--space-md);
+  color: var(--sso-secondary);
+}
+
+.page-loading .spinner-border {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-width: 3px;
+  color: var(--sso-primary);
+}
+
+/* Fade transition for content appearing */
+.fade-in {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Content placeholder while loading  */
+.content-placeholder {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+}
+
+.content-placeholder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: inherit;
+  backdrop-filter: blur(1px);
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--sso-secondary);
+}
+
+.empty-state i {
+  font-size: 3.5rem;
+  opacity: 0.25;
+  margin-bottom: var(--space-md);
+  display: block;
+  color: var(--sso-primary);
+}
+
+.empty-state h5 {
+  font-weight: 600;
+  color: var(--sso-dark);
+  margin-bottom: var(--space-xs);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: var(--sso-font-size-sm);
+  max-width: 360px;
+  margin-inline: auto;
+  line-height: 1.6;
+}

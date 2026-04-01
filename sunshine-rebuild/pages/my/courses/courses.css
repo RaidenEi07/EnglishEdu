@@ -1,0 +1,62 @@
+/* My Courses page styles */
+
+.mt-navbar { margin-top: var(--navbar-height); }
+
+.pagelayout-mycourses .page-wrapper {
+  min-height: calc(100vh - var(--navbar-height));
+  background: var(--sso-body-bg);
+}
+
+/* -- User initials avatar ---------------------------------------- */
+.user-initials {
+  font-family: var(--sso-font);
+  letter-spacing: .5px;
+}
+
+/* -- Course overview block --------------------------------------- */
+#blockCourseOverview .btn-check + .btn {
+  font-size: var(--sso-font-size-sm);
+  border-radius: var(--radius-full);
+}
+#blockCourseOverview .form-select-sm { font-size: .85rem; }
+#blockCourseOverview .input-group-sm .form-control { font-size: .85rem; }
+
+/* -- My Courses grid card ---------------------------------------- */
+.my-course-item .card {
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+.my-course-item .card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.my-course-item .card .card-title {
+  font-size: .95rem;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Progress bar in course card */
+.my-course-item .progress {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--sso-border);
+}
+
+.my-course-item .progress-bar {
+  border-radius: var(--radius-full);
+  transition: width 0.8s ease;
+}
+
+/* -- Responsive -------------------------------------------------- */
+@media (max-width: 767.98px) {
+  .primary-navigation { display: none; }
+  #blockCourseOverview .d-flex.flex-wrap { flex-direction: column; }
+  #blockCourseOverview .ms-auto { margin-left: 0 !important; margin-top: .5rem; flex-wrap: wrap; }
+}

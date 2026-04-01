@@ -1,0 +1,67 @@
+/* =============================================
+   Toast Notifications
+   ============================================= */
+#sso-toast-container {
+    z-index: 1080;
+}
+
+#sso-toast-container .toast {
+    min-width: 300px;
+    max-width: 440px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--sso-white);
+    box-shadow: var(--shadow-xl);
+    animation: slideInRight var(--transition-normal) ease-out;
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+}
+
+#sso-toast-container .toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--sso-primary);
+}
+
+#sso-toast-container .toast.toast-success::before {
+    background: var(--sso-success);
+}
+
+#sso-toast-container .toast.toast-danger::before {
+    background: var(--sso-danger);
+}
+
+#sso-toast-container .toast.toast-warning::before {
+    background: var(--sso-warning);
+}
+
+#sso-toast-container .toast .toast-body {
+    font-size: var(--sso-font-size-sm);
+    padding: var(--space-md) var(--space-lg) var(--space-md) calc(var(--space-lg) + 4px);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+#sso-toast-container .toast .btn-close {
+    font-size: 0.65rem;
+    opacity: 0.4;
+    transition: opacity var(--transition-fast);
+}
+
+#sso-toast-container .toast .btn-close:hover {
+    opacity: 1;
+}
+
+/* Toast exit animation */
+#sso-toast-container .toast.hiding {
+    animation: slideOutRight var(--transition-normal) ease-in forwards;
+}
+
+@keyframes slideOutRight {
+    to { transform: translateX(110%); opacity: 0; }
+}

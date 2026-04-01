@@ -1,0 +1,69 @@
+/* Teacher panel shared styles */
+.teacher-subnav {
+  background: linear-gradient(135deg, #166534 0%, #14532d 100%);
+  position: sticky;
+  top: var(--navbar-height);
+  z-index: 900;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.teacher-subnav .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: var(--sso-font-size-sm);
+  font-weight: 500;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.teacher-subnav .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.teacher-subnav .nav-link.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.teacher-main {
+  padding-top: var(--space-xl);
+  padding-bottom: var(--space-2xl);
+  margin-top: calc(var(--navbar-height) + 42px);
+  min-height: calc(100vh - var(--navbar-height));
+  background: var(--sso-body-bg);
+}
+
+/* -- Calendar ---------------------------------------------------- */
+#calendarTable th {
+  font-size: var(--sso-font-size-xs);
+  padding: .4rem .2rem;
+  color: var(--sso-secondary);
+}
+#calendarTable td {
+  font-size: .8rem;
+  padding: .35rem .2rem;
+  vertical-align: middle;
+  transition: background var(--transition-fast);
+}
+#calendarTable td:hover {
+  background: var(--sso-primary-bg);
+  border-radius: var(--radius-sm);
+}
+#calendarTable td .bg-primary {
+  font-size: var(--sso-font-size-xs);
+  border-radius: var(--radius-full);
+}
+#calendarTable td.has-schedule {
+  background: rgba(239, 68, 68, 0.08);
+  cursor: pointer;
+}
+.schedule-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sso-danger, #ef4444);
+  margin: 2px auto 0;
+}

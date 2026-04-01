@@ -1,0 +1,95 @@
+/* =============================================
+   Navbar
+   ============================================= */
+.navbar {
+    height: var(--navbar-height);
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1px solid var(--sso-border);
+    transition: box-shadow var(--transition-normal), background var(--transition-normal);
+}
+
+.navbar .logo {
+    max-height: 42px;
+    width: auto;
+    transition: transform var(--transition-fast);
+}
+
+.navbar .logo:hover {
+    transform: scale(1.04);
+}
+
+.navbar.scrolled {
+    box-shadow: var(--shadow-md);
+    background: rgba(255, 255, 255, 0.98) !important;
+}
+
+.navbar .nav-link {
+    font-size: var(--sso-font-size-sm);
+    font-weight: 500;
+    color: var(--sso-secondary);
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    color: var(--sso-primary);
+    background: var(--sso-primary-bg);
+}
+
+/* Notification badge pulse */
+.navbar .badge-notification {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.65rem;
+    min-width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* User avatar in navbar */
+.navbar .user-avatar-nav {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--sso-border);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--sso-font-size-sm);
+    background: var(--sso-primary);
+    color: white;
+}
+
+.navbar .user-avatar-nav:hover {
+    border-color: var(--sso-primary);
+    box-shadow: 0 0 0 3px var(--sso-primary-bg);
+}
+
+/* Dropdown menu polish */
+.navbar .dropdown-menu {
+    border: 1px solid var(--sso-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-xs);
+    animation: scaleIn var(--transition-fast) both;
+    transform-origin: top right;
+}
+
+.navbar .dropdown-item {
+    border-radius: var(--radius-sm);
+    font-size: var(--sso-font-size-sm);
+    padding: 0.45rem 0.75rem;
+    transition: background var(--transition-fast);
+}
+
+.navbar .dropdown-item:hover {
+    background: var(--sso-primary-bg);
+    color: var(--sso-primary);
+}

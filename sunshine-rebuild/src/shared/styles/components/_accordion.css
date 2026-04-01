@@ -1,0 +1,43 @@
+/* =============================================
+   FAQ Accordion
+   ============================================= */
+#faq .accordion-item {
+    border: 1px solid var(--sso-border);
+    border-radius: var(--radius-md) !important;
+    margin-bottom: var(--space-sm);
+    overflow: hidden;
+    transition: box-shadow var(--transition-normal);
+}
+
+#faq .accordion-item:hover {
+    box-shadow: var(--shadow-md);
+}
+
+#faq .accordion-button {
+    font-weight: 600;
+    font-size: var(--sso-font-size-base);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+#faq .accordion-button:not(.collapsed) {
+    background: var(--sso-primary-bg);
+    color: var(--sso-primary);
+    box-shadow: none;
+}
+
+#faq .accordion-button::after {
+    transition: transform var(--transition-normal);
+}
+
+#faq .accordion-button:focus {
+    box-shadow: 0 0 0 3px var(--sso-primary-bg);
+}
+
+#faq .accordion-body {
+    padding: 0 var(--space-lg) var(--space-lg);
+    color: var(--sso-secondary);
+    line-height: 1.7;
+    font-size: var(--sso-font-size-sm);
+}

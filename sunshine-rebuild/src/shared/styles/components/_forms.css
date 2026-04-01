@@ -1,0 +1,108 @@
+/* =============================================
+   Forms (shared styles)
+   ============================================= */
+
+/* Shared focus ring */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--sso-primary);
+    box-shadow: 0 0 0 3px var(--sso-primary-bg);
+}
+
+.form-control {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--sso-border);
+    padding: 0.55rem 0.85rem;
+    font-size: var(--sso-font-size-base);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-select {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--sso-border);
+    font-size: var(--sso-font-size-base);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Floating label refinements */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--sso-primary);
+}
+
+/* Input group polish */
+.input-group .input-group-text {
+    background: var(--sso-light);
+    border-color: var(--sso-border);
+    color: var(--sso-secondary);
+}
+
+/* Button styles */
+.btn {
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    font-size: var(--sso-font-size-base);
+}
+
+.btn-primary {
+    background: var(--sso-primary);
+    border-color: var(--sso-primary);
+}
+
+.btn-primary:hover {
+    background: var(--sso-primary-dark);
+    border-color: var(--sso-primary-dark);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-outline-primary {
+    color: var(--sso-primary);
+    border-color: var(--sso-primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--sso-primary);
+    border-color: var(--sso-primary);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+}
+
+/* Search input with icon */
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-input-wrapper .form-control {
+    padding-left: 2.5rem;
+}
+
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--sso-text-muted);
+    pointer-events: none;
+}
+
+/* Form validation states */
+.form-control.is-valid {
+    border-color: var(--sso-success);
+}
+
+.form-control.is-valid:focus {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-control.is-invalid {
+    border-color: var(--sso-danger);
+}
+
+.form-control.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}

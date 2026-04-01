@@ -1,0 +1,25 @@
+/* =============================================
+   Sunshine School Online - Shared Stylesheet
+   Imported by all page entry JS files
+   ============================================= */
+
+/* --- Base --- */
+@import './base/_variables.css';
+@import './base/_reset.css';
+
+/* --- Layout --- */
+@import './layout/_navbar.css';
+@import './layout/_footer.css';
+
+/* --- Components --- */
+@import './components/_animations.css';
+@import './components/_hero.css';
+@import './components/_features.css';
+@import './components/_cards.css';
+@import './components/_forms.css';
+@import './components/_accordion.css';
+@import './components/_toast.css';
+@import './components/_loading.css';
+
+/* --- Responsive --- */
+@import './responsive/_breakpoints.css';
