@@ -130,7 +130,8 @@ services:
       - moodle_data:/bitnami/moodle
       - moodledata_data:/bitnami/moodledata
     depends_on:
-      - mariadb
+      mariadb:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app_net
@@ -151,6 +152,12 @@ services:
       # Files run alphabetically — z-cleanup runs after the main dump
       - ./moddle-lms/moodle-db-export.sql:/docker-entrypoint-initdb.d/moodle-db-export.sql:ro
       - ./moddle-lms/z-cleanup-users.sql:/docker-entrypoint-initdb.d/z-cleanup-users.sql:ro
+    healthcheck:
+      test: ["CMD", "/opt/bitnami/scripts/mariadb/healthcheck.sh"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
     restart: unless-stopped
     networks:
       - app_net
