@@ -16,9 +16,14 @@ info "Checking requirements..."
 command -v docker  >/dev/null || error "Docker not found. Install: https://docs.docker.com/engine/install/"
 command -v node    >/dev/null || error "Node.js not found. Install via nvm or apt."
 [ -f ".env.prod" ] || error ".env.prod not found. Copy .env.prod.example and fill in values."
-[ -d "nginx/ssl" ] || error "SSL certs missing. Create nginx/ssl/ with cert.pem and key.pem."
-[ -f "nginx/ssl/cert.pem" ] || error "nginx/ssl/cert.pem not found."
-[ -f "nginx/ssl/key.pem"  ] || error "nginx/ssl/key.pem not found."
+# SSL check: only required when nginx.conf uses HTTPS
+if grep -q "ssl_certificate" nginx/nginx.conf 2>/dev/null; then
+  [ -d "nginx/ssl" ] || error "SSL certs missing. Create nginx/ssl/ with cert.pem and key.pem."
+  [ -f "nginx/ssl/cert.pem" ] || error "nginx/ssl/cert.pem not found."
+  [ -f "nginx/ssl/key.pem"  ] || error "nginx/ssl/key.pem not found."
+else
+  info "No SSL config detected — skipping cert check (HTTP mode)."
+fi
 
 # ── 1. Build frontend ─────────────────────────────────────────
 info "Building frontend..."
