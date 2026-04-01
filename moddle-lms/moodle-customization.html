@@ -1,0 +1,111 @@
+<!--
+  =========================================================================
+  MOODLE CUSTOMIZATION: "Quay lại Dashboard" button + Branding
+  =========================================================================
+  HƯỚNG DẪN CÀI ĐẶT:
+  1. Đăng nhập Moodle với tài khoản Admin
+  2. Vào: Site Administration → Appearance → Additional HTML
+  3. Trong ô "Within HEAD", dán đoạn <style> bên dưới
+  4. Trong ô "Before BODY is closed", dán đoạn <script> bên dưới
+  5. Bấm "Save changes"
+
+  LƯU Ý: Thay đổi URL "http://localhost:3000" thành URL thực của web chính
+  nếu bạn deploy lên server.
+  =========================================================================
+-->
+
+<!-- ═══════════════════════════════════════════════════════════
+     PHẦN 1: DÁN VÀO "Within HEAD"
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+/* ── "Quay lại Dashboard" floating button ────────────────── */
+#sso-back-to-dashboard {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #198754, #157347);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+#sso-back-to-dashboard:hover {
+  background: linear-gradient(135deg, #157347, #0f5c38);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  color: #fff;
+  text-decoration: none;
+}
+#sso-back-to-dashboard svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* ── Top banner for SSO users ─────────────────────────────── */
+#sso-top-banner {
+  background: linear-gradient(90deg, #198754, #20c997);
+  color: white;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+#sso-top-banner a {
+  color: #fff;
+  text-decoration: underline;
+  font-weight: 600;
+}
+#sso-top-banner a:hover {
+  color: #e0e0e0;
+}
+</style>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     PHẦN 2: DÁN VÀO "Before BODY is closed"
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── CẤU HÌNH ──────────────────────────────────────────────
+  // Thay đổi URL này thành URL web chính của bạn
+  var SSO_DASHBOARD_URL = 'http://localhost:3000/pages/teacher/dashboard/';
+  var SSO_HOME_URL      = 'http://localhost:3000';
+  // ──────────────────────────────────────────────────────────
+
+  // Only show for users who came via SSO (check referrer or URL params)
+  var isEditingTeacher = document.querySelector('.editing') ||
+                         document.querySelector('[data-region="course-content"]') ||
+                         window.location.pathname.indexOf('/course/') !== -1;
+
+  // ── Floating "Quay lại Dashboard" button ──────────────────
+  var btn = document.createElement('a');
+  btn.id = 'sso-back-to-dashboard';
+  btn.href = SSO_DASHBOARD_URL;
+  btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>' +
+                  '<span>Quay lại Dashboard</span>';
+  document.body.appendChild(btn);
+
+  // ── Top banner ────────────────────────────────────────────
+  var banner = document.createElement('div');
+  banner.id = 'sso-top-banner';
+  banner.innerHTML = '🏫 Bạn đang soạn giáo án trên Moodle — ' +
+                     '<a href="' + SSO_DASHBOARD_URL + '">Quay lại Dashboard</a>' +
+                     ' | <a href="' + SSO_HOME_URL + '">Về trang chủ</a>';
+  var firstChild = document.body.firstChild;
+  document.body.insertBefore(banner, firstChild);
+})();
+</script>

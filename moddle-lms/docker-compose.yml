@@ -1,0 +1,30 @@
+services:
+  mariadb:
+    image: bitnamilegacy/mariadb:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=bn_moodle
+      - MARIADB_DATABASE=bitnami_moodle
+      - MARIADB_CHARACTER_SET=utf8mb4
+      - MARIADB_COLLATE=utf8mb4_unicode_ci
+    volumes:
+      - 'mariadb_data:/bitnami/mariadb'
+
+  moodle:
+    image: bitnamilegacy/moodle:latest
+    ports:
+      - '8088:8080' 
+      - '4433:8443'
+    environment:
+      - MOODLE_DATABASE_HOST=mariadb
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - 'moodle_data:/bitnami/moodle'
+      - 'moodledata_data:/bitnami/moodledata'
+    depends_on:
+      - mariadb
+
+volumes:
+  mariadb_data:
+  moodle_data:
+  moodledata_data:

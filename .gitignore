@@ -1,0 +1,46 @@
+# ── Environment / Secrets ───────────────────────────────────
+.env.prod
+.env.local
+.env*.local
+*.env
+
+# ── Frontend build output ────────────────────────────────────
+sunshine-rebuild/node_modules/
+sunshine-rebuild/dist/
+
+# ── Backend build output ─────────────────────────────────────
+EnglishEdu_BE/target/
+
+# ── Moodle DB dump (large file – copy manually to server) ────
+# moddle-lms/moodle-db-export.sql   <- uncomment to exclude
+# If you want to keep it in git (22MB, within GitHub limits):
+# leave this commented out.
+
+# ── Logs & temp ──────────────────────────────────────────────
+*.log
+hts-log.txt
+hts-cache/
+cookies.txt
+
+# ── OS / IDE ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Docker volumes / local overrides ─────────────────────────
+docker-compose.override.yml
+
+# ── HTTrack web crawl artifacts (not part of project) ────────
+sunshineschool.edu.vn/
+cdn.jsdelivr.net/
+hts-cache/
+hts-log.txt
+cookies.txt
+backblue.gif
+fade.gif
+index.html
+
+# ── Offline teaching materials (not part of codebase) ────────
+4. UPPER/
+Ielts Prep/
