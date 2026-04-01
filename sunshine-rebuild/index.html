@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="SSO, Sunshine School Online, IELTS, Cambridge, English courses">
+    <meta name="description" content="Sunshine School Online - Nền tảng học tiếng Anh IELTS & Cambridge trực tuyến">
+    <title>Trang chủ | SSO</title>
+
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Bỏ qua đến nội dung chính</a>
+    <!-- Navbar (injected by injectNavbar) -->
+    <nav id="main-navbar"></nav>
+
+    <!-- Slider -->
+    <main id="main-content">
+    <section id="hero-slider" class="mt-navbar">
+        <div id="mainCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <img src="/images/cover-website.jpg" class="d-block w-100" alt="Sunshine School Online">
+                </div>
+                <!-- Thêm slide qua CMS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Marketing Features -->
+    <section id="feature" class="py-5" data-animate="up">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 my-3" data-animate="left">
+                    <h3 class="display-6 fw-bold mt-3 mb-3">MORE EDUCATION BETTER GENERATION</h3>
+                </div>
+                <div class="col-lg-8">
+                    <div class="row" id="marketing-features">
+                        <!-- Rendered from API / hoặc static -->
+                        <div class="col-sm-6 mt-4">
+                            <div class="card card-body shadow h-100">
+                                <div class="d-flex">
+                                    <div class="icon-lg rounded-circle flex-shrink-0">
+                                        <img src="/images/marketing1.png" alt="" width="48" height="48">
+                                    </div>
+                                    <div class="ps-3">
+                                        <h5>Chương trình liên kết Giảng Dạy</h5>
+                                        <p>Đào tạo Cambridge và IELTS cho hơn 1.000 học sinh ở tất cả các cấp độ</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mt-4">
+                            <div class="card card-body shadow h-100">
+                                <div class="d-flex">
+                                    <div class="icon-lg rounded-circle flex-shrink-0">
+                                        <img src="/images/marketing2.png" alt="" width="48" height="48">
+                                    </div>
+                                    <div class="ps-3">
+                                        <h5>Đối tác</h5>
+                                        <p>Đối tác "<strong>Vàng</strong>" của IDP Việt Nam với +400 học sinh đạt chứng chỉ IELTS 6.5-8.5</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mt-4">
+                            <div class="card card-body shadow h-100">
+                                <div class="d-flex">
+                                    <div class="icon-lg rounded-circle flex-shrink-0">
+                                        <img src="/images/marketing3.png" alt="" width="48" height="48">
+                                    </div>
+                                    <div class="ps-3">
+                                        <h5>Kinh nghiệm</h5>
+                                        <p>Kinh nghiệm 5+ năm trong lĩnh vực đào tạo và liên kết giảng dạy</p>
+                                        <p>Hỗ trợ chương trình học thuật cho 12 đơn vị Trung tâm tiếng Anh trên toàn quốc</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mt-4">
+                            <div class="card card-body shadow h-100">
+                                <div class="d-flex">
+                                    <div class="icon-lg rounded-circle flex-shrink-0">
+                                        <img src="/images/marketing4.png" alt="" width="48" height="48">
+                                    </div>
+                                    <div class="ps-3">
+                                        <h5>Chứng chỉ</h5>
+                                        <p>Đối tác vàng của OEA và Language Link trong việc tổ chức thi và cấp chứng chỉ Cambridge <strong>Pre A1, A1, A, B1, B2</strong> cho hơn 300 học viên</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Course Listing -->
+    <section id="courses" class="py-5 bg-light" data-animate="up">
+        <div class="container">
+            <h2 class="mb-4" data-i18n="courses.title">Các khoá học hiện tại</h2>
+
+            <!-- Category Filter -->
+            <div class="btn-group mb-4" role="group" aria-label="Filter courses">
+                <button type="button" class="btn btn-outline-primary active" data-filter="all">Tất cả</button>
+                <button type="button" class="btn btn-outline-primary" data-filter="ielts">IELTS</button>
+                <button type="button" class="btn btn-outline-primary" data-filter="cambridge">CAMBRIDGE</button>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="course-grid">
+                <!-- Courses rendered dynamically from API -->
+                <!-- Mẫu static cho demo -->
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-5" data-animate="up">
+        <div class="container">
+            <h2 class="mb-4" data-i18n="faq.title">FAQ</h2>
+            <div class="accordion" id="accordionFaq">
+                <!-- FAQ items rendered from API -->
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <!-- Footer (injected by injectFooter) -->
+    <footer id="page-footer"></footer>
+
+    <!-- App Entry (Vite) -->
+    <script type="module" src="/src/home/home.ts"></script>
+</body>
+</html>
