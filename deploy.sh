@@ -54,21 +54,21 @@ for i in $(seq 1 30); do
 done
 
 # ── 4. Fix Moodle wwwroot after DB import ────────────────────
-info "Updating Moodle wwwroot to production domain..."
+info "Updating Moodle wwwroot to production IP..."
 LMS_DOMAIN=$(grep ^LMS_DOMAIN .env.prod | cut -d= -f2)
 docker compose -f docker-compose.prod.yml exec -T mariadb \
-  /opt/bitnami/mariadb/bin/mariadb -u bn_moodle bitnami_moodle \
-  -e "UPDATE mdl_config SET value='https://${LMS_DOMAIN}' WHERE name='wwwroot';" \
+  /opt/bitnami/mariadb/bin/mariadb -u bn_moodle -pbn_pass bitnami_moodle \
+  -e "UPDATE mdl_config SET value='http://${LMS_DOMAIN}:8080' WHERE name='wwwroot';" \
   2>/dev/null || true
 success "Moodle wwwroot updated."
 
-# ── 4. Print service status ───────────────────────────────────
+# ── 5. Print service status ───────────────────────────────────
 echo ""
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 
 echo ""
 success "Deployment complete!"
 echo ""
-echo "  Frontend : https://\$(grep ^DOMAIN .env.prod | cut -d= -f2)"
-echo "  Moodle   : https://\$(grep ^LMS_DOMAIN .env.prod | cut -d= -f2)"
-echo "  MinIO    : http://YOUR_SERVER_IP:9001  (restrict firewall in production)"
+echo "  Frontend : http://$(grep ^DOMAIN .env.prod | cut -d= -f2)"
+echo "  Moodle   : http://$(grep ^LMS_DOMAIN .env.prod | cut -d= -f2):8080"
+echo "  MinIO    : http://$(grep ^DOMAIN .env.prod | cut -d= -f2):9001"

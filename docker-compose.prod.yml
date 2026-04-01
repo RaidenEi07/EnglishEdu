@@ -10,7 +10,7 @@ services:
     image: nginx:1.25-alpine
     ports:
       - "80:80"
-      - "443:443"
+      # - "443:443"   # Uncomment when SSL is ready
     volumes:
       - ./sunshine-rebuild/dist:/usr/share/nginx/html:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -50,8 +50,9 @@ services:
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       # App
-      APP_BASE_URL: https://${DOMAIN}
-      CORS_ORIGINS: https://${DOMAIN}
+      # HTTP mode (no domain yet) — change to https:// when SSL is ready
+      APP_BASE_URL: http://${DOMAIN}
+      CORS_ORIGINS: http://${DOMAIN}
       # Mail
       MAIL_HOST: ${MAIL_HOST}
       MAIL_PORT: ${MAIL_PORT}
@@ -114,8 +115,8 @@ services:
   # ─── Moodle LMS ───────────────────────────────────────────
   moodle:
     image: bitnamilegacy/moodle:latest
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
     environment:
       - MOODLE_DATABASE_HOST=mariadb
       - ALLOW_EMPTY_PASSWORD=yes
@@ -148,10 +149,7 @@ services:
       - MARIADB_COLLATE=utf8mb4_unicode_ci
     volumes:
       - mariadb_data:/bitnami/mariadb
-      # Moodle DB seed: auto-imported on first startup if volume is empty
-      # Files run alphabetically — z-cleanup runs after the main dump
-      - ./moddle-lms/moodle-db-export.sql:/docker-entrypoint-initdb.d/moodle-db-export.sql:ro
-      - ./moddle-lms/z-cleanup-users.sql:/docker-entrypoint-initdb.d/z-cleanup-users.sql:ro
+      # DB import: done manually after first startup (see DEPLOY-GUIDE.md step 5)
     healthcheck:
       test: ["CMD", "/opt/bitnami/scripts/mariadb/healthcheck.sh"]
       interval: 15s
