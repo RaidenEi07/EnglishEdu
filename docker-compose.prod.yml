@@ -14,7 +14,8 @@ services:
     volumes:
       - ./sunshine-rebuild/dist:/usr/share/nginx/html:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      # SSL: uncomment when domain + cert are ready
+      # - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
       - moodle
