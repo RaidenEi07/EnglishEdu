@@ -126,11 +126,10 @@ public class MoodleClient {
      */
     public JsonNode getUserByUsername(String username) {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("criteria[0][key]", "username");
-        params.put("criteria[0][value]", username);
-        JsonNode result = call("core_user_get_users", params);
-        JsonNode users = result.path("users");
-        return users.isArray() && !users.isEmpty() ? users.get(0) : null;
+        params.put("field", "username");
+        params.put("values[0]", username);
+        JsonNode result = call("core_user_get_users_by_field", params);
+        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
     }
 
     /**
