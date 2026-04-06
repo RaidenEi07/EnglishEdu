@@ -26,5 +26,10 @@ DELETE FROM mdl_user_enrolments WHERE userid = 6;
 DELETE FROM mdl_notifications WHERE useridto = 6;
 
 -- ── Clear their message inbox ───────────────────────────────
-DELETE FROM mdl_messages WHERE useridfrom = 6 OR useridto = 6;
+-- mdl_messages no longer has useridto (removed in Moodle 3.6+)
+-- Messages are linked via conversations; delete by membership
+DELETE m FROM mdl_messages m
+  INNER JOIN mdl_message_conversation_members mcm ON mcm.conversationid = m.conversationid
+  WHERE mcm.userid = 6;
 DELETE FROM mdl_message_conversation_members WHERE userid = 6;
+DELETE FROM mdl_messages WHERE useridfrom = 6;
