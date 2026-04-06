@@ -43,8 +43,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: sso-uploads
-      # Moodle (internal Docker URL)
-      MOODLE_URL: http://moodle:8080
+      # Moodle — must match wwwroot so Moodle doesn't redirect
+      MOODLE_URL: http://${LMS_DOMAIN}:8080
       MOODLE_PUBLIC_URL: http://${LMS_DOMAIN}:8080
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_SSO_SECRET: ${MOODLE_SSO_SECRET}
@@ -69,6 +69,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       # Never seed demo teacher in production
       SEED_DEMO_TEACHER: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - postgres
       - redis
