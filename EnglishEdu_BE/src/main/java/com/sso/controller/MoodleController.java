@@ -459,7 +459,7 @@ public class MoodleController {
     @GetMapping("/moodle/user-token")
     public ResponseEntity<ApiResponse<Map<String, String>>> getUserMoodleToken(
             @AuthenticationPrincipal UserDetails principal) {
-        User user = userRepository.findByUsername(principal.getUsername())
+        User user = userRepository.findById(Long.parseLong(principal.getUsername()))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         String token = moodleSyncService.ensureMoodleToken(user);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("token", token, "baseUrl", moodleProperties.getUrl())));
