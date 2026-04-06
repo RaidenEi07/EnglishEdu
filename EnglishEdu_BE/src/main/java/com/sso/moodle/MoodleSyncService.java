@@ -196,8 +196,8 @@ public class MoodleSyncService {
             }
         }
         String wantsUrl = (moodlePath != null && !moodlePath.isBlank())
-                ? moodleProperties.getUrl() + moodlePath
-                : moodleProperties.getUrl() + "/my/";
+                ? moodleProperties.getPublicUrl() + moodlePath
+                : moodleProperties.getPublicUrl() + "/my/";
         return moodleClient.requestSsoLoginUrl(user.getUsername(), wantsUrl);
     }
 
@@ -206,7 +206,7 @@ public class MoodleSyncService {
      */
     public String buildCourseUrl(Course course) {
         if (course.getMoodleCourseId() == null) return null;
-        return moodleProperties.getUrl() + "/course/view.php?id=" + course.getMoodleCourseId();
+        return moodleProperties.getPublicUrl() + "/course/view.php?id=" + course.getMoodleCourseId();
     }
 
     /* ─────────── Grades ────────────────────────────────────── */

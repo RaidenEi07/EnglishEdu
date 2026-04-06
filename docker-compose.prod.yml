@@ -45,8 +45,10 @@ services:
       MINIO_BUCKET: sso-uploads
       # Moodle (internal Docker URL)
       MOODLE_URL: http://moodle:8080
+      MOODLE_PUBLIC_URL: http://${LMS_DOMAIN}:8080
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_SSO_SECRET: ${MOODLE_SSO_SECRET}
+      MOODLE_SERVICE_NAME: englishedu_backend
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       # App

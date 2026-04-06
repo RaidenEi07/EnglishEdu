@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,9 @@ public class MoodleClient {
     public MoodleClient(MoodleProperties props) {
         this.props = props;
         this.objectMapper = new ObjectMapper();
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(15))
+                .build();
         this.restClient = RestClient.builder()
                 .baseUrl(props.getUrl())
                 .build();
@@ -71,6 +74,7 @@ public class MoodleClient {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .header("Content-Type", "application/x-www-form-urlencoded")
+                    .timeout(Duration.ofSeconds(30))
                     .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
                     .build();
 
@@ -80,6 +84,15 @@ public class MoodleClient {
             String responseBody = httpResponse.body();
             log.debug("Moodle API ← status={} body_len={}", httpResponse.statusCode(),
                     responseBody != null ? responseBody.length() : 0);
+
+            // Detect HTML response (Moodle returning error page instead of JSON)
+            if (responseBody != null && responseBody.trim().startsWith("<")) {
+                log.error("Moodle returned HTML instead of JSON for func={}, status={}, body_prefix={}",
+                        wsFunction, httpResponse.statusCode(),
+                        responseBody.substring(0, Math.min(500, responseBody.length())));
+                throw new MoodleApiException("Moodle returned HTML (not JSON) for " + wsFunction
+                        + ". Check Moodle REST protocol is enabled and function is in the external service.");
+            }
 
             JsonNode node = objectMapper.readTree(responseBody);
             if (node.has("exception")) {
@@ -265,7 +278,7 @@ public class MoodleClient {
             log.warn("auth_userkey SSO failed for user '{}' (plugin installed?): {}", username, e.getMessage());
         }
         // Fallback: direct URL — user must log in manually on Moodle
-        return wantsUrl != null ? wantsUrl : props.getUrl() + "/my/";
+        return wantsUrl != null ? wantsUrl : props.getPublicUrl() + "/my/";
     }
 
     /* ── Assignment functions ──────────────────────────────── */
@@ -572,6 +585,7 @@ public class MoodleClient {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .header("Content-Type", "application/x-www-form-urlencoded")
+                    .timeout(Duration.ofSeconds(30))
                     .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
                     .build();
 
@@ -581,6 +595,11 @@ public class MoodleClient {
             String responseBody = httpResponse.body();
             log.debug("Moodle API ← status={} body_len={}", httpResponse.statusCode(),
                     responseBody != null ? responseBody.length() : 0);
+
+            if (responseBody != null && responseBody.trim().startsWith("<")) {
+                log.error("Moodle returned HTML instead of JSON for func={} (user-token)", wsFunction);
+                throw new MoodleApiException("Moodle returned HTML (not JSON) for " + wsFunction);
+            }
 
             JsonNode node = objectMapper.readTree(responseBody);
             if (node.has("exception")) {
