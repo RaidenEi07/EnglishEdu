@@ -151,11 +151,11 @@ services:
       - mariadb_data:/bitnami/mariadb
       # DB import: done manually after first startup (see DEPLOY-GUIDE.md step 5)
     healthcheck:
-      test: ["CMD", "/opt/bitnami/scripts/mariadb/healthcheck.sh"]
+      test: ["CMD-SHELL", "/opt/bitnami/mariadb/bin/mysqladmin ping -h 127.0.0.1 -u root 2>/dev/null || /opt/bitnami/mariadb/bin/mariadb-admin ping -h 127.0.0.1 -u root 2>/dev/null"]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 20
-      start_period: 60s
+      start_period: 120s
     restart: unless-stopped
     networks:
       - app_net

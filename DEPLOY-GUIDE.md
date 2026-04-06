@@ -64,7 +64,7 @@ docker compose version    # Docker Compose v2+
 
 # Cài Node.js 20
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
+  apt install -y nodejs
 node --version            # v20+
 ```
 
