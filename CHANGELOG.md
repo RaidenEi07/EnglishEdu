@@ -7,7 +7,22 @@
 
 ## [Unreleased] — Cần deploy lên server
 
-### Thay đổi code (cần rebuild backend)
+### Fix critical: 502 Bad Gateway
+
+#### `MoodleClient.java`
+- **Fix CRITICAL:** `RestClient` khởi tạo trong constructor → crash nếu `MOODLE_URL` chưa set → chuyển sang **lazy-init** (chỉ tạo khi thực sự gọi API file)
+- Thêm null-check + error message rõ ràng khi MOODLE_URL chưa cấu hình
+
+#### `MoodleProperties.java`
+- **Fix:** Đổi `@Configuration` → `@Component` (đúng convention cho `@ConfigurationProperties`)
+
+#### `.env.prod.example`
+- **Fix:** Cập nhật IP từ `14.225.192.133` → `14.225.217.172`
+
+#### `DEPLOY-GUIDE.md`
+- **Fix:** Cập nhật IP server
+
+### Thay đổi code enrollment sync
 
 #### `EnrollmentService.java`
 - **Fix:** `getEnrolledCourses()` — Nếu student chưa có `moodleId`, tự động gọi `ensureMoodleUser()` trước khi sync (trước đây skip silent)

@@ -1,6 +1,6 @@
 # Hướng dẫn Deploy EnglishEdu lên Server
 
-> **Server:** Ubuntu 22.04 · IP: `14.225.192.133` · Chưa có domain · HTTP only
+> **Server:** Ubuntu 22.04 · IP: `14.225.217.172` · Chưa có domain · HTTP only
 
 ---
 

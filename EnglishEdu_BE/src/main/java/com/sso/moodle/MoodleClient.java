@@ -32,7 +32,7 @@ public class MoodleClient {
 
     private final MoodleProperties props;
     private final HttpClient httpClient;
-    private final RestClient restClient;      // kept for file download/upload only
+    private volatile RestClient restClient;   // lazy-init for file download/upload only
     private final ObjectMapper objectMapper;
 
     public MoodleClient(MoodleProperties props) {
@@ -41,9 +41,22 @@ public class MoodleClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
-        this.restClient = RestClient.builder()
-                .baseUrl(props.getUrl())
-                .build();
+        // RestClient is lazy-initialized — avoids startup crash when MOODLE_URL is not yet set
+    }
+
+    private RestClient getRestClient() {
+        if (restClient == null) {
+            synchronized (this) {
+                if (restClient == null) {
+                    String baseUrl = props.getUrl();
+                    if (baseUrl == null || baseUrl.isBlank()) {
+                        throw new MoodleApiException("MOODLE_URL is not configured");
+                    }
+                    restClient = RestClient.builder().baseUrl(baseUrl).build();
+                }
+            }
+        }
+        return restClient;
     }
 
     /**
@@ -520,7 +533,7 @@ public class MoodleClient {
             url += (url.contains("?") ? "&" : "?") + "token=" + props.getToken();
         }
 
-        return restClient.get()
+        return getRestClient().get()
                 .uri(url.replace(props.getUrl(), ""))
                 .retrieve()
                 .body(byte[].class);
@@ -559,7 +572,7 @@ public class MoodleClient {
         System.arraycopy(fileData, 0, body, preamble.length + headerBytes.length, fileData.length);
         System.arraycopy(epilogueBytes, 0, body, preamble.length + headerBytes.length + fileData.length, epilogueBytes.length);
 
-        String response = restClient.post()
+        String response = getRestClient().post()
                 .uri("/webservice/upload.php")
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .body(body)
