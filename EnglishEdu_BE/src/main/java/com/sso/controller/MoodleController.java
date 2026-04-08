@@ -62,6 +62,26 @@ public class MoodleController {
         return ResponseEntity.ok(ApiResponse.ok(Map.of("synced", count)));
     }
 
+    /**
+     * Import ALL courses from Moodle into EnglishEdu DB.
+     * Courses already linked (by moodleCourseId) are skipped.
+     */
+    @PostMapping("/admin/moodle/import-courses")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> importMoodleCourses() {
+        int count = moodleSyncService.importMoodleCourses();
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("imported", count)));
+    }
+
+    /**
+     * Sync ALL enrollments from Moodle → EnglishEdu for every student.
+     * Auto-provisions moodleId if missing, auto-imports unknown courses.
+     */
+    @PostMapping("/admin/moodle/sync-enrollments")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> syncAllEnrollments() {
+        int count = moodleSyncService.syncAllEnrollmentsFromMoodle();
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("synced", count)));
+    }
+
     @GetMapping("/admin/moodle/status")
     public ResponseEntity<ApiResponse<JsonNode>> getMoodleStatus() {
         JsonNode info = moodleSyncService.testConnection();
@@ -96,6 +116,16 @@ public class MoodleController {
                 moodleSyncService.syncTeacherEnrolment(user, course);
             } catch (Exception e) {
                 log.warn("Moodle teacher enrol on launch failed for user={} course={}: {}",
+                        user.getUsername(), course.getId(), e.getMessage());
+            }
+        }
+
+        // For students: ensure they are enrolled on Moodle (idempotent)
+        if ("STUDENT".equalsIgnoreCase(user.getRole())) {
+            try {
+                moodleSyncService.syncStudentEnrolment(user, course);
+            } catch (Exception e) {
+                log.warn("Moodle student enrol on launch failed for user={} course={}: {}",
                         user.getUsername(), course.getId(), e.getMessage());
             }
         }
@@ -157,7 +187,7 @@ public class MoodleController {
 
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "url", ssoUrl,
-                "moodleBaseUrl", moodleProperties.getUrl()
+                "moodleBaseUrl", moodleProperties.getPublicUrl()
         )));
     }
 

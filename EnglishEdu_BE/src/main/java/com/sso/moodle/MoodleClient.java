@@ -175,6 +175,16 @@ public class MoodleClient {
     }
 
     /**
+     * Unenrol a user from a course using the manual enrolment plugin.
+     */
+    public void unenrolUser(long moodleUserId, long moodleCourseId) {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("enrolments[0][userid]", String.valueOf(moodleUserId));
+        params.put("enrolments[0][courseid]", String.valueOf(moodleCourseId));
+        call("enrol_manual_unenrol_users", params);
+    }
+
+    /**
      * Get enrolled users for a course.
      */
     public JsonNode getEnrolledUsers(long moodleCourseId) {
@@ -192,6 +202,13 @@ public class MoodleClient {
         params.put("field", field);
         params.put("value", value);
         return call("core_course_get_courses_by_field", params);
+    }
+
+    /**
+     * Get ALL courses from Moodle. Returns a JSON array of course objects.
+     */
+    public JsonNode getAllCourses() {
+        return call("core_course_get_courses", Map.of());
     }
 
     /**

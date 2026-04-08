@@ -35,6 +35,7 @@ public class MoodleSyncService {
     private final MoodleProperties moodleProperties;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final com.sso.repository.EnrollmentRepository enrollmentRepository;
 
     private static final int MOODLE_ROLE_STUDENT = 5;
     private static final int MOODLE_ROLE_TEACHER = 3;
@@ -167,6 +168,16 @@ public class MoodleSyncService {
         moodleClient.enrolUser(moodleUserId, moodleCourseId, MOODLE_ROLE_TEACHER);
         log.info("Enrolled teacher {} in Moodle course {} (role=editingteacher)",
                 teacher.getUsername(), course.getName());
+    }
+
+    /**
+     * Unenrol a student from a course on Moodle.
+     * Silently ignored if user or course is not yet provisioned on Moodle.
+     */
+    public void unenrolStudent(User student, Course course) {
+        if (student.getMoodleId() == null || course.getMoodleCourseId() == null) return;
+        moodleClient.unenrolUser(student.getMoodleId(), course.getMoodleCourseId());
+        log.info("Unenrolled student {} from Moodle course {}", student.getUsername(), course.getName());
     }
 
     /* ─────────── SSO login URL ─────────────────────────────── */
@@ -365,6 +376,104 @@ public class MoodleSyncService {
                 } catch (Exception e) {
                     log.warn("Failed to sync course '{}' from Moodle: {}", c.getName(), e.getMessage());
                 }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Import ALL courses from Moodle into the local EnglishEdu database.
+     * Courses that already have a matching moodleCourseId are skipped.
+     * Returns count of newly imported courses.
+     */
+    @Transactional
+    public int importMoodleCourses() {
+        JsonNode allMoodleCourses = moodleClient.getAllCourses();
+        if (allMoodleCourses == null || !allMoodleCourses.isArray()) return 0;
+        int count = 0;
+        for (JsonNode mc : allMoodleCourses) {
+            long moodleCourseId = mc.path("id").asLong();
+            if (moodleCourseId <= 1) continue; // skip id=0 (error) and id=1 (Moodle "Site" course)
+            if (courseRepository.findByMoodleCourseId(moodleCourseId).isPresent()) continue;
+
+            String fullname = mc.path("fullname").asText("").trim();
+            if (fullname.isEmpty()) continue;
+
+            Course course = Course.builder()
+                    .name(fullname)
+                    .description(mc.path("summary").asText(""))
+                    .moodleCourseId(moodleCourseId)
+                    .published(true)
+                    .free(true)
+                    .build();
+            courseRepository.save(course);
+            count++;
+            log.info("Imported Moodle course: moodleId={} name='{}'", moodleCourseId, fullname);
+        }
+        return count;
+    }
+
+    /**
+     * For all students in the local DB that have a moodleId, query Moodle
+     * for their enrolled courses and auto-create missing local enrollment records.
+     * Also auto-imports courses from Moodle that don't exist locally.
+     * Returns total number of new enrollment records created.
+     */
+    @Transactional
+    public int syncAllEnrollmentsFromMoodle() {
+        var users = userRepository.findAll();
+        int count = 0;
+        for (User user : users) {
+            if (user.isGuest() || !"STUDENT".equalsIgnoreCase(user.getRole())) continue;
+            // Auto-provision moodleId if missing
+            if (user.getMoodleId() == null) {
+                try {
+                    ensureMoodleUser(user);
+                    user = userRepository.findById(user.getId()).orElse(user);
+                } catch (Exception e) {
+                    log.warn("Could not provision Moodle user for {}: {}", user.getUsername(), e.getMessage());
+                    continue;
+                }
+            }
+            if (user.getMoodleId() == null) continue;
+
+            try {
+                JsonNode moodleCourses = getMoodleCourses(user);
+                if (moodleCourses == null || !moodleCourses.isArray()) continue;
+                for (JsonNode mc : moodleCourses) {
+                    long moodleCourseId = mc.path("id").asLong();
+                    if (moodleCourseId <= 1) continue;
+
+                    Course course = courseRepository.findByMoodleCourseId(moodleCourseId).orElse(null);
+                    if (course == null) {
+                        String fullname = mc.path("fullname").asText("").trim();
+                        if (fullname.isEmpty()) continue;
+                        course = Course.builder()
+                                .name(fullname)
+                                .description(mc.path("summary").asText(""))
+                                .moodleCourseId(moodleCourseId)
+                                .published(true)
+                                .free(true)
+                                .build();
+                        course = courseRepository.save(course);
+                        log.info("Auto-imported Moodle course: id={} name='{}'", moodleCourseId, fullname);
+                    }
+
+                    if (!enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId())) {
+                        com.sso.entity.Enrollment e = com.sso.entity.Enrollment.builder()
+                                .user(user)
+                                .course(course)
+                                .status("active")
+                                .requestDate(java.time.Instant.now())
+                                .approvedAt(java.time.Instant.now())
+                                .build();
+                        enrollmentRepository.save(e);
+                        count++;
+                        log.info("Synced Moodle enrollment: user={} course={}", user.getUsername(), course.getName());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Enrollment sync failed for user {}: {}", user.getUsername(), e.getMessage());
             }
         }
         return count;

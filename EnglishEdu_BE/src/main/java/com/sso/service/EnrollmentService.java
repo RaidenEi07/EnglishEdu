@@ -61,8 +61,19 @@ public class EnrollmentService {
                     .toList();
         }
         // For students: lazily sync any Moodle enrollments that were created outside EnglishEdu
-        if ("STUDENT".equalsIgnoreCase(user.getRole()) && user.getMoodleId() != null) {
-            syncMoodleEnrollmentsToLocal(user);
+        if ("STUDENT".equalsIgnoreCase(user.getRole())) {
+            // Auto-provision moodleId if missing (user may have been created before Moodle sync)
+            if (user.getMoodleId() == null) {
+                try {
+                    moodleSyncService.ensureMoodleUser(user);
+                    user = userRepository.findById(userId).orElse(user); // re-read after REQUIRES_NEW
+                } catch (Exception e) {
+                    log.warn("Could not provision Moodle user for {}: {}", user.getUsername(), e.getMessage());
+                }
+            }
+            if (user.getMoodleId() != null) {
+                syncMoodleEnrollmentsToLocal(user);
+            }
         }
         return enrollmentRepository.findByUserIdOrderByLastAccessedDesc(userId).stream()
                 .map(courseMapper::toEnrolledResponse)
@@ -81,19 +92,37 @@ public class EnrollmentService {
             for (com.fasterxml.jackson.databind.JsonNode mc : moodleCourses) {
                 long moodleCourseId = mc.path("id").asLong();
                 if (moodleCourseId == 0) continue;
-                courseRepository.findByMoodleCourseId(moodleCourseId).ifPresent(course -> {
-                    if (!enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId())) {
-                        Enrollment e = Enrollment.builder()
-                                .user(user)
-                                .course(course)
-                                .status("active")
-                                .requestDate(Instant.now())
-                                .approvedAt(Instant.now())
-                                .build();
-                        enrollmentRepository.save(e);
-                        log.info("Auto-synced Moodle enrollment: user={} course={}", user.getUsername(), course.getName());
-                    }
-                });
+                // Skip Moodle's built-in "Site" course (id=1)
+                if (moodleCourseId == 1) continue;
+
+                Course course = courseRepository.findByMoodleCourseId(moodleCourseId).orElse(null);
+
+                // Auto-import course from Moodle if it doesn't exist locally
+                if (course == null) {
+                    String fullname = mc.path("fullname").asText("").trim();
+                    if (fullname.isEmpty()) continue;
+                    course = Course.builder()
+                            .name(fullname)
+                            .description(mc.path("summary").asText(""))
+                            .moodleCourseId(moodleCourseId)
+                            .published(true)
+                            .free(true)
+                            .build();
+                    course = courseRepository.save(course);
+                    log.info("Auto-imported Moodle course: id={} name='{}'", moodleCourseId, fullname);
+                }
+
+                if (!enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId())) {
+                    Enrollment e = Enrollment.builder()
+                            .user(user)
+                            .course(course)
+                            .status("active")
+                            .requestDate(Instant.now())
+                            .approvedAt(Instant.now())
+                            .build();
+                    enrollmentRepository.save(e);
+                    log.info("Auto-synced Moodle enrollment: user={} course={}", user.getUsername(), course.getName());
+                }
             }
         } catch (Exception e) {
             log.warn("Moodle enrollment sync failed for user {}: {}", user.getUsername(), e.getMessage());
@@ -276,6 +305,9 @@ public class EnrollmentService {
                 "Quyền truy cập khóa học \"" + enrollment.getCourse().getName() + "\" đã bị thu hồi.",
                 null,
                 "ENROLLMENT");
+
+        // Sync revoke to Moodle (unenrol student)
+        try { moodleSyncService.unenrolStudent(enrollment.getUser(), enrollment.getCourse()); } catch (Exception e) { log.warn("Moodle unenrol on revoke failed: {}", e.getMessage()); }
 
         return toAdminResponse(saved);
     }
