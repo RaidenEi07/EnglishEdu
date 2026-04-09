@@ -6,10 +6,12 @@ import com.sso.entity.User;
 import com.sso.repository.NotificationRepository;
 import com.sso.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationPushService {
@@ -23,7 +25,11 @@ public class NotificationPushService {
      */
     @Transactional
     public void sendNotification(Long userId, String message, String link, String type) {
-        User user = userRepository.getReferenceById(userId);
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            log.warn("Cannot send notification: user {} not found", userId);
+            return;
+        }
 
         Notification notification = Notification.builder()
                 .user(user)

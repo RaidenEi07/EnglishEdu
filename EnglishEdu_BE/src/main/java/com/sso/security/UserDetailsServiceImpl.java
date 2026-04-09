@@ -25,8 +25,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getId().toString(),
                 user.getPassword(),
-                user.isActive(),
-                true, true, true,
+                user.isActive(),          // enabled
+                true,                     // accountNonExpired
+                true,                     // credentialsNonExpired
+                user.isActive(),          // accountNonLocked — mirrors enabled so inactive users are fully blocked
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase()))
         );
     }
@@ -39,7 +41,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 user.getId().toString(),
                 user.getPassword(),
                 user.isActive(),
-                true, true, true,
+                true,
+                true,
+                user.isActive(),
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase()))
         );
     }

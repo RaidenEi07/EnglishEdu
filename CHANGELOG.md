@@ -5,6 +5,66 @@
 
 ---
 
+## [Unreleased] — Security Audit & Optimization (2026-04-09)
+
+### Bảo mật (Security)
+
+#### `PaymentService.java` — Idempotency check
+- **Fix CRITICAL:** `handlePaymentCallback()` không kiểm tra trạng thái hiện tại → webhook replay dẫn đến kích hoạt enrollment trùng lặp
+- Thêm guard: nếu payment đã `COMPLETED` hoặc `FAILED` → trả về ngay, không xử lý lại
+
+#### `StorageService.java` — File upload validation
+- **Fix HIGH:** Không validate loại file và kích thước → cho phép upload file nguy hiểm
+- Thêm whitelist extension (jpg, png, pdf, doc, mp3, mp4...)
+- Thêm giới hạn kích thước tối đa 10 MB
+
+#### `JwtProperties.java` — JWT secret validation
+- **Fix CRITICAL:** Thêm `@PostConstruct` kiểm tra `JWT_SECRET` phải >= 32 ký tự, không được rỗng
+- App sẽ fail-fast nếu thiếu JWT_SECRET thay vì chạy không an toàn
+
+#### `MoodleProperties.java` — Startup warning
+- **Fix CRITICAL:** Thêm `@PostConstruct` cảnh báo nếu `MOODLE_TOKEN` rỗng hoặc `MOODLE_SSO_SECRET` là giá trị mặc định
+
+#### `application.properties` — Xóa credentials mặc định
+- **Fix CRITICAL:** Xóa password mặc định `GilArchon` trong datasource (`DB_PASSWORD` giờ là rỗng nếu không set env)
+- **Fix CRITICAL:** Xóa JWT secret mặc định (giờ bắt buộc set `JWT_SECRET` env var)
+- **Fix HIGH:** Xóa `minioadmin` default cho MinIO access/secret key
+- **Fix LOW:** Ẩn actuator `info` endpoint (chỉ expose `health`)
+
+#### `pom.xml` — Xóa hardcoded credentials
+- **Fix CRITICAL:** Flyway plugin có hardcoded DB password `GilArchon` trong source — đổi sang dùng env vars `${env.DB_URL}`, `${env.DB_USERNAME}`, `${env.DB_PASSWORD}`
+
+#### `SecurityConfig.java` — CORS headers whitelist
+- **Fix MEDIUM:** `setAllowedHeaders(*)` → whitelist cụ thể: `Content-Type`, `Authorization`, `Accept`, `X-Requested-With`
+
+#### `.env.prod.example` — Xóa credentials thật
+- **Fix CRITICAL:** File chứa email thật, mật khẩu thật, JWT secret thật → thay toàn bộ bằng placeholder `CHANGE_ME_*`
+
+### Stability & Error Handling
+
+#### `EmailService.java` — Error handling
+- **Fix MEDIUM:** `mailSender.send()` không bắt exception → lỗi 500 không rõ ràng khi mail server hỏng
+- Thêm try/catch MailException với log + thông báo user-friendly
+
+#### `NotificationPushService.java` — Safe user lookup
+- **Fix HIGH:** `getReferenceById(userId)` trả proxy → nổ LazyInitializationException khi user không tồn tại
+- Đổi sang `findById()` + log warning nếu user không tìm thấy (không throw)
+
+#### `EnrollmentService.java` — getReferenceById → findById
+- **Fix HIGH:** 3 chỗ dùng `getReferenceById(adminId)` → đổi tất cả sang `findById()` + `orElseThrow()`
+
+### Infrastructure
+
+#### `docker-compose.prod.yml` — Health checks
+- **Thêm:** Health check cho backend (`/actuator/health`), PostgreSQL (`pg_isready`), Redis (`redis-cli ping`)
+- **Fix:** Backend `depends_on` đổi từ list → condition `service_healthy` cho postgres và redis
+
+#### `nginx.conf` — Security headers + request limit
+- **Thêm:** `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`, `Referrer-Policy`
+- **Thêm:** `client_max_body_size 10m` (giới hạn upload qua nginx)
+
+---
+
 ## [Unreleased] — Cần deploy lên server
 
 ### Fix critical: 502 Bad Gateway
@@ -167,8 +227,34 @@ curl -X POST http://localhost/api/v1/admin/moodle/sync-enrollments \
 
 ## Các việc chưa làm
 
-- [ ] Fix font encoding `┬á` trong quiz UPPER-IELTS (double-encoding từ SQL import)
-- [ ] Cập nhật IP trong `DEPLOY-GUIDE.md` (còn `14.225.192.133`, phải đổi thành `14.225.217.172`)
+- [x] ~~Fix font encoding `┬á` trong quiz UPPER-IELTS~~ ✅ Script `moddle-lms/fix-font-encoding.sql` đã tạo
+- [x] ~~Cập nhật IP trong `DEPLOY-GUIDE.md`~~ ✅ Đã sửa
+- [x] ~~Security audit — xóa hardcoded credentials~~ ✅ Đã fix (pom.xml, application.properties, .env.prod.example)
+- [x] ~~Payment idempotency~~ ✅ Đã fix
+- [x] ~~File upload validation~~ ✅ Đã fix
+- [x] ~~JWT/Moodle secret validation~~ ✅ Đã fix
+- [x] ~~Docker health checks~~ ✅ Đã thêm (backend, postgres, redis)
+- [x] ~~Nginx security headers~~ ✅ Đã thêm
+- [x] ~~Rate limiting cho payment endpoints~~ ✅ Đã fix (Redis, 10 req/60s per IP)
+- [x] ~~Password policy cho đăng ký và Reset password~~ ✅ Đã fix (min 8 ký tự, cần chữ hoa + chữ thường + số)
+- [x] ~~Inactive user vẫn login được~~ ✅ Đã fix (UserDetailsServiceImpl)
+- [x] ~~PaymentCallbackRequest không validate input~~ ✅ Đã fix (@NotBlank, @Pattern)
 - [ ] Test SSO flow đầu-cuối
 - [ ] Cài SSL / HTTPS
 - [ ] Cấu hình domain (nếu có)
+
+---
+
+## Đánh giá & Yêu cầu Moodle (Feature Requests)
+
+> Các yêu cầu bên dưới đều là thay đổi **phía Moodle admin** — không cần sửa code Java/TypeScript
+
+| # | Yêu cầu | Loại | Trạng thái | Hướng xử lý |
+|---|---------|------|------------|-------------|
+| MR-01 | Bỏ cột thông tin câu hỏi trong giao diện chỉnh sửa nội dung khóa học | CSS/Theme | 🔧 Cần làm | CSS ẩn cột qua Additional HTML |
+| MR-02 | Sửa lỗi UI Moodle | CSS/Theme | 🔧 Cần làm | Custom CSS qua Additional HTML |
+| MR-03 | IELTS mode khi tạo quiz (giao diện IDP, bật/tắt copy-paste, theo dõi màn hình) | Plugin | ❌ Cần phát triển plugin | Viết plugin `mod_quiz` hoặc `local_ieltsmode` |
+| MR-04 | Tăng max sections/course lên 100 (hiện max 52) | Config | 🔧 Cần làm | Setting trong Moodle admin |
+| MR-05 | Module Audio chạy xuyên sections/page | Plugin | ❌ Cần phát triển plugin | Viết plugin `local_audioplayer` |
+
+### Chi tiết xử lý từng mục — xem `TROUBLESHOOT.md` mục "Moodle Feature Requests"

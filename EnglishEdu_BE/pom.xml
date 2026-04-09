@@ -164,9 +164,9 @@
 				<groupId>org.flywaydb</groupId>
 				<artifactId>flyway-maven-plugin</artifactId>
 				<configuration>
-					<url>jdbc:postgresql://localhost:5432/EnglishEdu</url>
-					<user>postgres</user>
-					<password>GilArchon</password>
+					<url>${env.DB_URL}</url>
+					<user>${env.DB_USERNAME}</user>
+					<password>${env.DB_PASSWORD}</password>
 					<locations>filesystem:src/main/resources/db/migration</locations>
 				</configuration>
 			</plugin>

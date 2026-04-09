@@ -217,6 +217,127 @@ docker exec englishedu-moodle-1 chmod -R 775 /bitnami/moodledata
 
 ---
 
+### ERR-20 — Payment webhook replay dẫn đến duplicate enrollment activation
+| | |
+|---|---|
+| **Triệu chứng** | Webhook từ payment gateway gọi lại 2 lần → enrollment kích hoạt 2 lần, notification gửi 2 lần |
+| **Nguyên nhân** | `handlePaymentCallback()` không kiểm tra payment đã ở trạng thái terminal (`COMPLETED`/`FAILED`) |
+| **Fix** | Thêm idempotency guard: nếu `payment.getStatus()` đã là `COMPLETED` hoặc `FAILED` → return ngay |
+| **File sửa** | `PaymentService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-21 — Upload file không giới hạn loại & kích thước
+| | |
+|---|---|
+| **Triệu chứng** | Có thể upload `.jar`, `.exe`, hoặc file lớn vô giới hạn |
+| **Nguyên nhân** | `StorageService.uploadFile()` chỉ lấy extension, không validate whitelist hay size |
+| **Fix** | Thêm whitelist extension (jpg, png, pdf, doc, mp3...) + max 10 MB |
+| **File sửa** | `StorageService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-22 — Hardcoded credentials trong source code
+| | |
+|---|---|
+| **Triệu chứng** | `git log` hiển thị password DB `GilArchon` trong `pom.xml` và `application.properties` |
+| **Nguyên nhân** | Flyway Maven plugin hardcode URL/user/password. DataSource default cũng để password |
+| **Fix** | Đổi sang env vars: `${env.DB_URL}`, `${env.DB_USERNAME}`, `${env.DB_PASSWORD}`. Xóa default password |
+| **File sửa** | `pom.xml`, `application.properties` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-23 — JWT_SECRET và MOODLE_SSO_SECRET default không an toàn
+| | |
+|---|---|
+| **Triệu chứng** | App start thành công với secret mặc định → JWT có thể bị forge |
+| **Nguyên nhân** | `application.properties` có default cho `jwt.secret`, `moodle.sso-secret` |
+| **Fix** | Xóa default. `JwtProperties` fail-fast nếu secret < 32 chars. `MoodleProperties` warn nếu dùng default |
+| **File sửa** | `JwtProperties.java`, `MoodleProperties.java`, `application.properties` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-24 — .env.prod.example chứa credentials thật
+| | |
+|---|---|
+| **Triệu chứng** | Email thật, password thật, JWT secret thật committed vào git |
+| **Nguyên nhân** | File example dùng giá trị sản xuất thay vì placeholder |
+| **Fix** | Thay toàn bộ bằng `CHANGE_ME_*` placeholder |
+| **File sửa** | `.env.prod.example` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-25 — Email gửi thất bại trả 500 không rõ ràng
+| | |
+|---|---|
+| **Triệu chứng** | Forgot password → 500 Internal Server Error (mail server unreachable) |
+| **Nguyên nhân** | `EmailService.sendPasswordResetEmail()` không bắt `MailException` |
+| **Fix** | try/catch với log + thông báo tiếng Việt: "Không thể gửi email..." |
+| **File sửa** | `EmailService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-26 — NotificationPushService crash khi user đã bị xóa
+| | |
+|---|---|
+| **Triệu chứng** | `LazyInitializationException` khi gửi notification cho user không tồn tại |
+| **Nguyên nhân** | `getReferenceById()` trả proxy → nổ khi access thuộc tính |
+| **Fix** | Đổi sang `findById()` + return sớm nếu user == null |
+| **File sửa** | `NotificationPushService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-27 — Password policy quá yếu
+| | |
+|---|---|
+| **Triệu chứng** | User có thể đăng ký với password `abc123` hoặc `12345678` |
+| **Nguyên nhân** | `RegisterRequest` chỉ validate `@Size(min=6)`, không kiểm tra độ phức tạp |
+| **Fix** | `@Size(min=8, max=72)` + `@Pattern(regexp="^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$")` — bắt buộc chữ hoa, chữ thường, số |
+| **File sửa** | `RegisterRequest.java`, `ResetPasswordRequest.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-28 — User bị vô hiệu hóa vẫn đăng nhập được
+| | |
+|---|---|
+| **Triệu chứng** | Admin set `active = false` nhưng user vẫn lấy được JWT và truy cập API |
+| **Nguyên nhân** | `UserDetailsServiceImpl` hardcode `true, true, true, true` — bỏ qua field `isActive` |
+| **Fix** | `enabled` và `accountNonLocked` được trả về từ `user.isActive()` thay vì `true` |
+| **File sửa** | `UserDetailsServiceImpl.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-29 — PaymentCallbackRequest không validate input
+| | |
+|---|---|
+| **Triệu chứng** | Endpoint `/callback` chấp nhận status tùy ý (ví dụ `"HACKED"`) và xử lý như bình thường |
+| **Nguyên nhân** | `PaymentCallbackRequest` không có constraint nào trên các field |
+| **Fix** | Thêm `@NotBlank` trên `transactionId`, `status`; `@Pattern(regexp="^(COMPLETED\|FAILED)$")` trên `status` |
+| **File sửa** | `PaymentCallbackRequest.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-30 — Không có rate limiting cho payment endpoints
+| | |
+|---|---|
+| **Triệu chứng** | Attacker có thể spam `/initiate` hoặc `/callback` hàng nghìn lần/phút |
+| **Nguyên nhân** | Không có throttling trên payment controller |
+| **Fix** | Tạo `PaymentRateLimitService` dùng Redis counter — max **10 requests/60s** per IP. Trả về `429 Too Many Requests` khi vượt ngưỡng |
+| **File sửa** | `PaymentRateLimitService.java` (mới), `PaymentController.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
 ## Debug ERR-18 — Không đăng nhập được Moodle
 
 ### Bước 1: Kiểm tra wwwroot trong config.php
@@ -328,6 +449,388 @@ curl -X POST http://localhost/api/v1/admin/moodle/status \
 | `docker-compose.prod.yml` | `MOODLE_URL` → `http://${LMS_DOMAIN}:8080` | Phải khớp `wwwroot` |
 | `docker-compose.prod.yml` | `MOODLE_HTTP_PORT_NUMBER=8080` | Bitnami tự set port |
 | `docker-compose.prod.yml` | MariaDB healthcheck dùng `mysqladmin ping` | Path đúng với image |
+| `docker-compose.prod.yml` | Health checks cho backend, postgres, redis | Phát hiện crash sớm |
+| `docker-compose.prod.yml` | Backend `depends_on` condition `service_healthy` | Đợi DB/Redis ready |
 | `application.properties` | `moodle.public-url` thêm | SSO URL cho browser |
+| `application.properties` | Xóa default credentials (DB, JWT, MinIO) | Bảo mật |
+| `pom.xml` | Flyway plugin dùng env vars thay cho hardcoded creds | Bảo mật |
+| `nginx.conf` | Security headers + `client_max_body_size 10m` | Hardening |
 | `MoodleClient.java` | HTML detection + timeout 30s | Phát hiện sớm lỗi redirect |
 | `MoodleSyncService.java` | `getPublicUrl()` cho SSO/course URL | URL browser-facing |
+| `PaymentService.java` | Idempotency guard | Chống webhook replay |
+| `StorageService.java` | File type whitelist + max size 10MB | Bảo mật upload |
+| `JwtProperties.java` | Fail-fast nếu JWT_SECRET < 32 chars | Bảo mật |
+| `.env.prod.example` | Placeholder thay vì creds thật | Bảo mật |
+
+---
+
+## Moodle Feature Requests — Hướng dẫn chi tiết
+
+> Tất cả các mục dưới đây là thay đổi **phía Moodle** (admin settings, CSS/JS injection, hoặc plugin).  
+> Không cần sửa code Java backend hay TypeScript frontend.
+
+---
+
+### MR-01 — Bỏ cột "Thông tin câu hỏi" trong giao diện chỉnh sửa nội dung khóa học
+
+| | |
+|---|---|
+| **Loại** | CSS injection (đơn giản) |
+| **Nơi sửa** | Site Administration → Appearance → Additional HTML → "Within HEAD" |
+
+**Cách làm:**
+
+Thêm CSS sau vào phần `<style>` đã có trong `moodle-customization.html`:
+
+```css
+/* MR-01: Ẩn cột thông tin câu hỏi khi chỉnh sửa nội dung khóa học */
+.course-content .activity .activity-info,
+.course-content .activity .activity-altcontent,
+.editing .activity-item .activity-info {
+  display: none !important;
+}
+```
+
+> **Lưu ý:** Cần kiểm tra trên Moodle phiên bản 5.0.1 — class name có thể khác tuỳ theme. Bật chế độ editing, dùng DevTools (F12) → Inspect cột cần ẩn → xác định đúng CSS selector, rồi sửa lại cho chính xác.
+
+**Cách debug nếu không hiệu quả:**
+1. Mở Moodle → vào một course → bật "Turn editing on"
+2. F12 → Inspect phần tử cột "Thông tin câu hỏi"
+3. Lấy CSS class/selector chính xác
+4. Cập nhật CSS selector ở trên cho khớp
+
+---
+
+### MR-02 — Sửa lỗi UI Moodle (chung)
+
+| | |
+|---|---|
+| **Loại** | CSS injection |
+| **Nơi sửa** | Site Administration → Appearance → Additional HTML → "Within HEAD" |
+
+**Cần xác định cụ thể:** Yêu cầu này cần thông tin chi tiết hơn:
+- Lỗi UI cụ thể là gì? (font bị vỡ, alignment sai, responsive hỏng, màu sắc…)
+- Ở trang nào? (dashboard, course view, quiz, …)
+- Screenshot nếu có
+
+**Cách xử lý chung:**
+
+1. Mở trang bị lỗi → F12 DevTools → xác định element
+2. Viết CSS fix → test trước trong DevTools
+3. Thêm vào `moodle-customization.html` phần `<style>` trong "Within HEAD"
+4. Vào Moodle Admin → Appearance → Additional HTML → paste → Save
+
+**Ví dụ CSS fixes phổ biến:**
+
+```css
+/* Fix font tiếng Việt */
+body, .navbar, .card, .activity-item {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif !important;
+}
+
+/* Fix responsive trên mobile */
+@media (max-width: 768px) {
+  .course-content .section {
+    padding: 8px !important;
+  }
+}
+```
+
+---
+
+### MR-03 — IELTS Mode trong Quiz Settings (Giao diện IDP, bật/tắt copy-paste, theo dõi màn hình)
+
+| | |
+|---|---|
+| **Loại** | **PHỨC TẠP** — Cần plugin + JavaScript injection |
+| **Mức độ** | ⚠️ Lớn — ước tính 2-4 tuần dev nếu viết plugin từ đầu |
+
+**Phân tích 3 tính năng con:**
+
+#### 3a. Giao diện dạng IDP (International English Testing interface)
+
+Đây là thay đổi **giao diện quiz** — cần quiz theme override hoặc custom layout.
+
+**Cách 1 — CSS Override (nhanh, giới hạn):**
+```css
+/* Bố cục quiz dạng IDP — 2 cột */
+body.path-mod-quiz #page-content {
+  display: flex !important;
+  flex-direction: row !important;
+}
+body.path-mod-quiz #region-main {
+  flex: 1;
+  max-width: 60%;
+}
+body.path-mod-quiz .block_region {
+  flex: 0 0 40%;
+}
+```
+
+**Cách 2 — Custom Quiz Layout Plugin (đúng cách):**
+- Tạo plugin `local_ieltsmode` hoặc `mod_quiz` renderer override
+- Moodle docs: [Quiz renderer override](https://docs.moodle.org/dev/Output_renderers#Overriding_a_renderer)
+
+#### 3b. Bật/tắt Copy-Paste
+
+**Cách nhanh — JavaScript injection (thêm vào "Before BODY is closed"):**
+
+```javascript
+// MR-03b: Chặn copy/paste khi quiz đang active
+(function() {
+  'use strict';
+  // Chỉ chạy trên trang quiz attempt
+  if (window.location.pathname.indexOf('/mod/quiz/attempt.php') === -1) return;
+
+  // Chặn copy, cut, paste
+  document.addEventListener('copy', function(e) { e.preventDefault(); });
+  document.addEventListener('cut', function(e) { e.preventDefault(); });
+  document.addEventListener('paste', function(e) { e.preventDefault(); });
+
+  // Chặn right-click
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+  // Chặn Ctrl+C, Ctrl+V, Ctrl+X
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a')) {
+      e.preventDefault();
+    }
+  });
+
+  // CSS chặn text selection
+  var style = document.createElement('style');
+  style.textContent = `
+    .que .formulation, .que .answer, .que .qtext {
+      -webkit-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
+```
+
+> **⚠️ Lưu ý:** Client-side chặn copy/paste dễ bị bypass (DevTools). Để nghiêm túc cần kết hợp SEB (Safe Exam Browser) — xem mục 3c.
+
+**Bật/tắt theo quiz:** Cần plugin vì Moodle không có cài đặt copy-paste per-quiz. Hoặc dùng quiz "Browser security" = "Full screen pop-up with some JavaScript security" (có sẵn trong Moodle).
+
+**Cách bật tính năng có sẵn:**
+1. Vào quiz → Settings → Extra restrictions on attempts
+2. "Browser security" → chọn "Full screen pop-up with some JavaScript security"
+3. Moodle sẽ tự chặn copy/paste/right-click + mở fullscreen popup
+
+#### 3c. Theo dõi màn hình (Screen monitoring / Proctoring)
+
+**Đây là tính năng phức tạp nhất.** Có 3 hướng:
+
+| Hướng | Mô tả | Đánh giá |
+|-------|-------|----------|
+| **Moodle SEB** | Safe Exam Browser — browser khoá | ✅ Có sẵn, cài đặt dễ |
+| **Proctoring plugin** | Plugin giám sát webcam/tab | ⚠️ Cần cài plugin bên thứ 3 |
+| **Tự viết plugin** | Theo dõi tab focus, ghi log | ⚠️ Dev 1-2 tuần |
+
+**Hướng 1 — Safe Exam Browser (khuyến nghị):**
+
+1. Tải SEB: https://safeexambrowser.org/
+2. Cấu hình quiz trong Moodle:
+   - Quiz → Settings → Extra restrictions on attempts
+   - "Require the use of Safe Exam Browser" → Yes
+   - Thêm SEB config key
+3. Học sinh phải cài SEB để làm bài
+
+**Hướng 2 — Plugin Proctoring (đơn giản hơn SEB):**
+
+- Plugin: `quizaccess_proctoring` — chụp webcam định kỳ
+- Cài qua Moodle Plugin Directory hoặc upload ZIP
+- Site Admin → Plugins → Install plugins
+
+**Hướng 3 — JavaScript giám sát tab focus (nhanh):**
+
+```javascript
+// MR-03c: Theo dõi khi học sinh chuyển tab
+(function() {
+  if (window.location.pathname.indexOf('/mod/quiz/attempt.php') === -1) return;
+
+  var switchCount = 0;
+  var maxAllowed = 3; // Cho phép tối đa 3 lần chuyển tab
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      switchCount++;
+      console.warn('[IELTS Mode] Tab switch #' + switchCount);
+
+      if (switchCount >= maxAllowed) {
+        // Tự động nộp bài
+        var submitBtn = document.querySelector('input[name="finishattempt"]') ||
+                        document.querySelector('.submitbtns button');
+        if (submitBtn) {
+          alert('Bạn đã chuyển tab quá ' + maxAllowed + ' lần. Bài thi sẽ được nộp tự động.');
+          submitBtn.click();
+        }
+      } else {
+        alert('Cảnh báo: Bạn đã chuyển tab ' + switchCount + '/' + maxAllowed + ' lần. Vượt quá giới hạn bài thi sẽ tự nộp.');
+      }
+    }
+  });
+})();
+```
+
+---
+
+### MR-04 — Tăng Max Sections/Course lên 100 (hiện tại max 52)
+
+| | |
+|---|---|
+| **Loại** | Moodle admin setting (đơn giản nhất) |
+| **Thời gian** | 1 phút |
+
+**Các bước:**
+
+1. Đăng nhập Moodle bằng tài khoản Admin
+2. Vào **Site Administration → Plugins → Course formats → Topics format**
+3. Tìm mục **"Maximum number of sections"**
+4. Đổi từ `52` → `100` (hoặc giá trị mong muốn)
+5. Bấm **"Save changes"**
+
+**Nếu dùng format khác (Weekly, Tiles...):**
+- Mỗi course format có setting riêng
+- Vào **Site Administration → Plugins → Course formats → [tên format]**
+- Sửa "Maximum number of sections" tương ứng
+
+**Nếu cần max > 200:**
+- Moodle bắt đầu chậm với quá nhiều sections
+- Nên cân nhắc chia nhỏ course thay vì tăng quá cao
+
+---
+
+### MR-05 — Module Audio chạy xuyên sections/page
+
+| | |
+|---|---|
+| **Loại** | JavaScript injection hoặc custom plugin |
+| **Mức độ** | ⚠️ Trung bình — JS injection có thể làm nhanh |
+
+**Yêu cầu:** Một audio player cố định (sticky) trên trang, tiếp tục phát khi chuyển section/tab trong cùng course.
+
+**Giải pháp nhanh — Sticky Audio Player (JS injection):**
+
+Thêm vào `moodle-customization.html`:
+
+**CSS (thêm vào "Within HEAD"):**
+```css
+/* MR-05: Sticky Audio Player */
+#sso-audio-player {
+  position: fixed;
+  bottom: 80px; /* Phía trên nút "Quay lại Dashboard" */
+  right: 24px;
+  z-index: 99998;
+  background: #1a1a2e;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  display: none; /* Ẩn khi không có audio */
+  max-width: 320px;
+}
+#sso-audio-player audio {
+  width: 100%;
+  height: 36px;
+}
+#sso-audio-player .audio-title {
+  color: #ccc;
+  font-size: 12px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sso-audio-player .audio-close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  color: #888;
+  cursor: pointer;
+  font-size: 16px;
+  background: none;
+  border: none;
+}
+```
+
+**JavaScript (thêm vào "Before BODY is closed"):**
+```javascript
+// MR-05: Sticky Audio Player — chạy xuyên sections
+(function() {
+  'use strict';
+  // Chỉ chạy trong course view
+  if (window.location.pathname.indexOf('/course/view.php') === -1) return;
+
+  // Tạo container audio player
+  var container = document.createElement('div');
+  container.id = 'sso-audio-player';
+  container.innerHTML = '<button class="audio-close">&times;</button>' +
+    '<div class="audio-title"></div>' +
+    '<audio controls></audio>';
+  document.body.appendChild(container);
+
+  var audio = container.querySelector('audio');
+  var titleEl = container.querySelector('.audio-title');
+  var closeBtn = container.querySelector('.audio-close');
+
+  // Lưu/khôi phục trạng thái audio qua sessionStorage
+  var storageKey = 'sso_audio_' + (new URLSearchParams(window.location.search).get('id') || '0');
+  var saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+
+  if (saved && saved.src) {
+    audio.src = saved.src;
+    audio.currentTime = saved.time || 0;
+    titleEl.textContent = saved.title || 'Audio';
+    container.style.display = 'block';
+    if (saved.playing) audio.play();
+  }
+
+  // Lưu trạng thái trước khi rời trang
+  window.addEventListener('beforeunload', function() {
+    if (audio.src) {
+      sessionStorage.setItem(storageKey, JSON.stringify({
+        src: audio.src,
+        time: audio.currentTime,
+        playing: !audio.paused,
+        title: titleEl.textContent
+      }));
+    }
+  });
+
+  // Bắt click vào audio resource trong course
+  document.addEventListener('click', function(e) {
+    var link = e.target.closest('a[href*="/mod/resource/view.php"], a[href*="/pluginfile.php"]');
+    if (!link) return;
+
+    var href = link.href;
+    // Kiểm tra đuôi file audio
+    if (!/\.(mp3|wav|ogg|m4a|aac|flac)/i.test(href)) return;
+
+    e.preventDefault();
+    audio.src = href;
+    titleEl.textContent = link.textContent.trim() || 'Audio';
+    container.style.display = 'block';
+    audio.play();
+  });
+
+  // Nút đóng
+  closeBtn.addEventListener('click', function() {
+    audio.pause();
+    audio.src = '';
+    container.style.display = 'none';
+    sessionStorage.removeItem(storageKey);
+  });
+})();
+```
+
+**Hạn chế của giải pháp JS injection:**
+- Audio sẽ bị ngắt khi chuyển trang (full page reload) — phải dùng `sessionStorage` để resume
+- Chuyển section bằng AJAX (nếu format hỗ trợ) thì audio tiếp tục phát
+- Muốn audio không bị ngắt hoàn toàn khi chuyển trang → cần Service Worker hoặc iframe (phức tạp hơn)
+
+**Giải pháp bền vững (khuyến nghị nếu cần chất lượng cao):**
+- Viết plugin `local_audioplayer` với audio nằm trong `<iframe>` hoặc popup riêng
+- Hoặc dùng AJAX course format (vd: "Tiles") để navigate không reload trang

@@ -135,6 +135,8 @@ public class EnrollmentService {
      */
     @Transactional
     public EnrolledCourseResponse directEnrollByAdmin(Long adminId, Long targetUserId, Long courseId) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Course course = courseRepository.findById(courseId)
@@ -146,7 +148,7 @@ public class EnrollmentService {
             if (!"active".equals(existing.getStatus()) && !"inprogress".equals(existing.getStatus())) {
                 existing.setStatus("active");
                 existing.setApprovedAt(Instant.now());
-                existing.setApprovedBy(userRepository.getReferenceById(adminId));
+                existing.setApprovedBy(admin);
                 enrollmentRepository.save(existing);
             }
             try { moodleSyncService.syncStudentEnrolment(targetUser, course); } catch (Exception e) { log.warn("Moodle sync on direct enroll: {}", e.getMessage()); }
@@ -159,7 +161,7 @@ public class EnrollmentService {
                 .status("active")
                 .requestDate(Instant.now())
                 .approvedAt(Instant.now())
-                .approvedBy(userRepository.getReferenceById(adminId))
+                .approvedBy(admin)
                 .build();
         enrollment = enrollmentRepository.save(enrollment);
 
@@ -279,7 +281,8 @@ public class EnrollmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
         enrollment.setStatus("active");
         enrollment.setApprovedAt(Instant.now());
-        enrollment.setApprovedBy(userRepository.getReferenceById(adminId));
+        enrollment.setApprovedBy(userRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found")));
         Enrollment saved = enrollmentRepository.save(enrollment);
 
         notificationPushService.sendNotification(enrollment.getUser().getId(),

@@ -69,6 +69,11 @@ public class PaymentService {
         Payment payment = paymentRepository.findByTransactionId(req.getTransactionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
+        // Idempotency: skip if already in a terminal state
+        if ("COMPLETED".equals(payment.getStatus()) || "FAILED".equals(payment.getStatus())) {
+            return toResponse(payment);
+        }
+
         if ("COMPLETED".equals(req.getStatus())) {
             payment.setStatus("COMPLETED");
             payment.setPaidAt(Instant.now());
