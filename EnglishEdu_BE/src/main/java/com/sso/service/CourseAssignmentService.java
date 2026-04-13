@@ -64,7 +64,8 @@ public class CourseAssignmentService {
             throw new BadRequestException("Chỉ có thể chỉ định khóa học cho tài khoản học sinh.");
         }
 
-        User admin = userRepository.getReferenceById(adminId);
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
         List<CourseAssignmentResponse> results = new ArrayList<>();
 
         for (Long courseId : request.getCourseIds()) {

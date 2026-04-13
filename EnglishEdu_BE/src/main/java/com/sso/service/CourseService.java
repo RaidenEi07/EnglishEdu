@@ -5,6 +5,7 @@ import com.sso.dto.request.UpdateCourseRequest;
 import com.sso.dto.response.CourseResponse;
 import com.sso.entity.Course;
 import com.sso.entity.CourseTeacher;
+import com.sso.entity.User;
 import com.sso.exception.BadRequestException;
 import com.sso.exception.ResourceNotFoundException;
 import com.sso.mapper.CourseMapper;
@@ -122,10 +123,10 @@ public class CourseService {
                 // Remove all legacy-teacher CourseTeacher records (those added via this mechanism)
                 courseTeacherRepository.deleteByCourseId(course.getId());
             } else {
-                userRepository.findById(req.getTeacherId()).ifPresent(newTeacher -> {
-                    course.setTeacher(newTeacher);
-                    syncLegacyTeacher(course, newTeacher);
-                });
+                User newTeacher = userRepository.findById(req.getTeacherId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+                course.setTeacher(newTeacher);
+                syncLegacyTeacher(course, newTeacher);
             }
         }
         if (req.getCategoryId() != null) {

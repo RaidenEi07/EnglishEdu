@@ -45,7 +45,7 @@
 |---|---|---|---|
 | `postgres` | `postgres:16-alpine` | `5432` | DB: `sso_db`, user: `sso_user`, pass: `sso_pass` |
 | `redis` | `redis:7-alpine` | `6379` | Lưu blacklist token |
-| `minio` | `minio/minio:latest` | `9000` (API), `9001` (Console) | Lưu file; creds: `minioadmin/minioadmin` |
+| `minio` | `minio/minio:latest` | `9000` (API), `9001` (Console) | Lưu file; creds từ env var `MINIO_ACCESS_KEY/SECRET_KEY` |
 
 Persistent volumes: `pgdata`, `miniodata`.
 
@@ -320,6 +320,7 @@ redisTemplate.hasKey("blacklist:" + token)  // → từ chối nếu true
 | `BadRequestException` | `400 Bad Request` | `ApiResponse.error(message)` |
 | `BadCredentialsException` | `401 Unauthorized` | `"Invalid username or password"` |
 | `MethodArgumentNotValidException` | `400 Bad Request` | Danh sách lỗi validation |
+| `MoodleApiException` | `502 Bad Gateway` | Thông báo generic (không lộ nội bộ) |
 | `Exception` (catch-all) | `500 Internal Server Error` | `"Internal server error"` |
 
 Mọi response dùng wrapper `ApiResponse<T>`.
@@ -374,7 +375,7 @@ Mọi response dùng wrapper `ApiResponse<T>`.
 ```
 
 Các methods được phép: `GET, POST, PUT, PATCH, DELETE, OPTIONS`  
-Allowed headers: `Authorization, Content-Type`  
+Allowed headers: `Content-Type, Authorization, Accept, X-Requested-With`  
 `allowCredentials: true`
 
 ---
@@ -418,3 +419,50 @@ com.sso/
 ---
 
 *Xem thêm: [FRONTEND.md](FRONTEND.md) — Tài liệu Frontend*
+
+---
+
+## 15. Security Hardening (2026-04)
+
+### Input Validation
+| DTO | Validation |
+|---|---|
+| `RegisterRequest.username` | `^(?=.*[a-zA-Z])[a-zA-Z0-9_.-]+$` — bắt buộc ít nhất 1 chữ cái (không cho phép username thuần số) |
+| `RegisterRequest.password` | `@Size(min=8, max=72)` + `@Pattern` — bắt buộc chữ hoa + chữ thường + số |
+| `PaymentCallbackRequest.status` | `@Pattern(regexp="^(COMPLETED\|FAILED)$")` — chỉ chấp nhận 2 giá trị |
+| `PaymentCallbackRequest.*` | `@NotBlank` trên tất cả field |
+
+### Authentication
+- **Inactive users** bị block ở Spring Security layer: `UserDetailsServiceImpl` đặt `enabled = user.isActive()` và `accountNonLocked = user.isActive()`
+- **JWT fail-fast**: `JwtProperties` reject startup nếu `JWT_SECRET` < 32 kyẻ hoặc rỗng
+
+### Rate Limiting
+- `PaymentRateLimitService` (Redis-backed): **10 requests/60s per IP** cho endpoints `/payments/initiate` và `/payments/callback`
+- Trả về `429 Too Many Requests` kèm thông báo tiếng Việt khi vượt ngưỡng
+
+### File Upload
+- `StorageService` validate: **whitelist extension** (jpg, png, pdf, doc, mp3, mp4...) + **max 10 MB**
+- Nginx: `client_max_body_size 10m`
+
+### Infrastructure
+- Nginx: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`
+- Docker health checks: backend (`/actuator/health`), postgres, redis
+- `depends_on` condition `service_healthy` cho backend
+
+### Credentials
+- Không có credential nào hardcode trong source code hay `application.properties`
+- Tất cả secrets đếu tròng từ env var, fail-fast nếu thiếu
+
+---
+
+## 16. Test Coverage
+
+| Test Suite | Số tests | Phạm vi |
+|---|---|---|
+| `JwtTokenProviderTest` | 10 | generate, validate, getUserId, tampered token |
+| `CategoryServiceTest` | 16 | CRUD categories + levels |
+| `UserServiceTest` | 13 | getProfile, updateProfile, changePassword, createUser, toggleActive |
+| `AuthServiceTest` | 9 | register, login, guestLogin, forgotPassword |
+| `PaymentServiceTest` | 9 | initiatePayment, handlePaymentCallback (idempotency, FAILED, COMPLETED) |
+| `ReviewServiceTest` | 8 | createReview (gates), updateReview, deleteReview |
+| **Tổng** | **65** | |

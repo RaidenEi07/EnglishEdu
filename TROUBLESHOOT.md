@@ -338,6 +338,50 @@ docker exec englishedu-moodle-1 chmod -R 775 /bitnami/moodledata
 
 ---
 
+### ERR-31 — Moodle API error lộ chi tiết nội bộ ra client
+| | |
+|---|---|
+| **Triệu chứng** | Response body chứa `"Moodle error: Exception - ..."` hoặc URL nội bộ |
+| **Nguyên nhân** | `GlobalExceptionHandler.handleMoodleApi()` trả `"Moodle error: " + ex.getMessage()` |
+| **Fix** | Trả về thông báo generic: `"Không thể kết nối đến hệ thống LMS. Vui lòng thử lại sau."` |
+| **File sửa** | `GlobalExceptionHandler.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-32 — CourseAssignmentService crash khi adminId không tồn tại
+| | |
+|---|---|
+| **Triệu chứng** | `LazyInitializationException` hoặc EntityNotFoundException ở tầng persistence khi admin user bị xóa |
+| **Nguyên nhân** | `userRepository.getReferenceById(adminId)` trả JPA proxy; lỗi không xảy ra ngay lập tức mà khi JPA access entity |
+| **Fix** | Đổi sang `findById(adminId).orElseThrow(() -> new ResourceNotFoundException("Admin user not found"))` |
+| **File sửa** | `CourseAssignmentService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-33 — Update course teacher thất bại âm thầm
+| | |
+|---|---|
+| **Triệu chứng** | Admin gửi `teacherId=999` (không tồn tại) → API trả 200 OK nhưng teacher không cập nhật |
+| **Nguyên nhân** | `userRepository.findById(teacherId).ifPresent(...)` → nếu teacher không tìm thấy, `ifPresent` skip không throw |
+| **Fix** | Đổi sang `.orElseThrow(() -> new ResourceNotFoundException("Teacher not found"))` |
+| **File sửa** | `CourseService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-34 — Username là số thuần túy
+| | |
+|---|---|
+| **Triệu chứng** | User đăng ký username `"12345"` — trùng với pattern ID số trong controller (`Long.parseLong`) |
+| **Nguyên nhân** | Regex `^[a-zA-Z0-9_.-]+$` cho phép username toàn số |
+| **Fix** | Đổi regex thành `^(?=.*[a-zA-Z])[a-zA-Z0-9_.-]+$` — bắt buộc ít nhất 1 chữ cái |
+| **File sửa** | `RegisterRequest.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
 ## Debug ERR-18 — Không đăng nhập được Moodle
 
 ### Bước 1: Kiểm tra wwwroot trong config.php

@@ -5,6 +5,39 @@
 
 ---
 
+## [Unreleased] — Code Quality & Test Coverage (2026-04-13)
+
+### Bảo mật
+
+#### `GlobalExceptionHandler.java` — Ẩn lỗi nội bộ Moodle
+- **Fix MEDIUM:** Handler `MoodleApiException` trả về `"Moodle error: " + ex.getMessage()` → lộ chi tiết nội bộ Moodle cho client
+- Đổi thành thông báo generic tiếng Việt; giữ log chi tiết ở server-side
+
+#### `RegisterRequest.java` — Username không được là số thuần túy
+- **Fix LOW:** Username regex `^[a-zA-Z0-9_.-]+$` cho phép username như `"123"` → xung đột với pattern `Long.parseLong(username)` trong controller
+- Đổi regex → bắt buộc ít nhất 1 chữ cái: `^(?=.*[a-zA-Z])[a-zA-Z0-9_.-]+$`
+
+### Bugs
+
+#### `CourseAssignmentService.java` — getReferenceById → findById
+- **Fix HIGH:** `userRepository.getReferenceById(adminId)` trả JPA proxy → nổ exception khi adminId không tồn tại và entity được access
+- Đổi sang `findById(adminId).orElseThrow(() -> new ResourceNotFoundException(...))`
+
+#### `CourseService.java` — Teacher update thất bại âm thầm
+- **Fix MEDIUM:** `userRepository.findById(teacherId).ifPresent(...)` → nếu teacher không tồn tại, course silently không được cập nhật teacher
+- Đổi sang `.orElseThrow(() -> new ResourceNotFoundException("Teacher not found"))`; đồng thời thêm import `User`
+
+### Tests
+
+#### Thêm 3 test suite mới (+26 tests)
+- **AuthServiceTest** (9 tests): `register`, `login`, `guestLogin`, `forgotPassword` — bao gồm happy path + edge cases (trùng username/email, bad credentials, Moodle sync failure không abort)
+- **PaymentServiceTest** (9 tests): `initiatePayment`, `handlePaymentCallback` — idempotency, free course, enrollment activation, FAILED status
+- **ReviewServiceTest** (8 tests): `createReview` (enrollment required, 30% progress gate, duplicate check), `updateReview`, `deleteReview`
+
+**Tổng số tests: 65 (tăng từ 39)**
+
+---
+
 ## [Unreleased] — Security Audit & Optimization (2026-04-09)
 
 ### Bảo mật (Security)
@@ -239,6 +272,11 @@ curl -X POST http://localhost/api/v1/admin/moodle/sync-enrollments \
 - [x] ~~Password policy cho đăng ký và Reset password~~ ✅ Đã fix (min 8 ký tự, cần chữ hoa + chữ thường + số)
 - [x] ~~Inactive user vẫn login được~~ ✅ Đã fix (UserDetailsServiceImpl)
 - [x] ~~PaymentCallbackRequest không validate input~~ ✅ Đã fix (@NotBlank, @Pattern)
+- [x] ~~Moodle error lộ ra client~~ ✅ GlobalExceptionHandler — thông báo generic
+- [x] ~~CourseAssignmentService getReferenceById~~ ✅ Đổi sang findById.orElseThrow
+- [x] ~~CourseService teacher update silent‐fail~~ ✅ Đổi sang orElseThrow
+- [x] ~~Username thuần số cho phép~~ ✅ Regex bắt buộc ít nhất 1 chữ cái
+- [x] ~~Test coverage thấp (39 tests)~~ ✅ Thêm 26 tests → tổng **65 tests** (AuthService, PaymentService, ReviewService)
 - [ ] Test SSO flow đầu-cuối
 - [ ] Cài SSL / HTTPS
 - [ ] Cấu hình domain (nếu có)

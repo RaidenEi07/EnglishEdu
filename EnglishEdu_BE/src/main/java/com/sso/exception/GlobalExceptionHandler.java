@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMoodleApi(MoodleApiException ex) {
         log.warn("Moodle API error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ApiResponse.error("Moodle error: " + ex.getMessage()));
+                .body(ApiResponse.error("Không thể kết nối đến hệ thống LMS. Vui lòng thử lại sau."));
     }
 
     @ExceptionHandler(Exception.class)
