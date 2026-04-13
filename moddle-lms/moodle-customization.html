@@ -9,8 +9,10 @@
   4. Trong ô "Before BODY is closed", dán đoạn <script> bên dưới
   5. Bấm "Save changes"
 
-  LƯU Ý: Thay đổi URL "http://localhost:3000" thành URL thực của web chính
-  nếu bạn deploy lên server.
+  LƯU Ý: Thay URL bên dưới trước khi dán vào Moodle:
+    SSO_DASHBOARD_URL  → http://<IP_SERVER>/pages/teacher/dashboard/
+    SSO_HOME_URL       → http://<IP_SERVER>
+  Hiện đã set sẵn cho server: http://14.225.192.133
   =========================================================================
 -->
 
@@ -81,9 +83,9 @@
   'use strict';
 
   // ── CẤU HÌNH ──────────────────────────────────────────────
-  // Thay đổi URL này thành URL web chính của bạn
-  var SSO_DASHBOARD_URL = 'http://localhost:3000/pages/teacher/dashboard/';
-  var SSO_HOME_URL      = 'http://localhost:3000';
+  // Thay đổi URL này thành URL web chính của bạn khi deploy
+  var SSO_DASHBOARD_URL = 'http://221.132.21.13/pages/teacher/dashboard/';
+  var SSO_HOME_URL      = 'http://221.132.21.13';
   // ──────────────────────────────────────────────────────────
 
   // Only show for users who came via SSO (check referrer or URL params)

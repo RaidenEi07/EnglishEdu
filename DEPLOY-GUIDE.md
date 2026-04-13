@@ -30,6 +30,8 @@
 | 6 | Moodle hiện "New Site" (DB trống) | `docker-entrypoint-initdb.d` không chạy với Bitnami image | Import thủ công |
 | 7 | Import SQL lỗi `ASCII '\0'` | PowerShell `>` xuất file UTF-16 (mỗi char thêm `0x00`) | Re-export với `--hex-blob` + encoding UTF-8 không BOM |
 | 8 | Env vars trống (WARN) | Chạy lệnh thiếu `--env-file .env.prod` | Đúng lệnh |
+| 9 | Moodle login redirect về port 80 (trang chủ frontend) | `wwwroot` trong `config.php` bị Bitnami set thiếu port 8080 khi restart; lệnh `UPDATE mdl_config WHERE name='wwwroot'` vô tác dụng vì key không tồn tại trong DB | Fix trực tiếp `config.php` bằng `sed` sau khi restart (xem bước 5.4b) |
+| 10 | Nút "Về trang chủ" trong Moodle trỏ về `localhost:3000` | `additionalhtmlfooter` trong DB export dùng URL dev hardcoded | Chạy UPDATE SQL sửa URL sau khi import (bước 5.4c) |
 
 ---
 
@@ -163,42 +165,57 @@ docker compose -f docker-compose.prod.yml ps
 
 ---
 
-## BƯỚC 5 — Import Moodle DB (bắt buộc — chỉ lần đầu)
+## BƯỚC 5 — Kiểm tra & Fix Moodle (fresh DB — Bitnami tự khởi tạo)
 
-> Bitnami MariaDB image KHÔNG tự import file từ `docker-entrypoint-initdb.d`.
-> Phải import thủ công.
+> **Không cần import SQL.** Bitnami tự tạo DB mới từ env vars trong `docker-compose.prod.yml`.
+> Tài khoản admin: `MOODLE_USERNAME` / `MOODLE_PASSWORD`
+>
+> ⚠️ **Moodle mất 5-10 phút để khởi tạo DB lần đầu** — chờ trước khi chạy các lệnh dưới.
 
 ```bash
-cd ~/EnglishEdu
+# Theo dõi Moodle đã xong chưa:
+docker compose -f docker-compose.prod.yml logs -f moodle
+# Chờ thấy: "moodle | INFO  ==> Starting Moodle..." hoặc Apache started
+# Ctrl+C để thoát
 
-# 5.1 — Copy SQL vào container
-docker compose -f docker-compose.prod.yml \
-  cp moddle-lms/moodle-db-export.sql mariadb:/tmp/moodle.sql
+# 5.1 — Kiểm tra wwwroot trong config.php (QUAN TRỌNG — nguyên nhân CSS không load)
+docker compose -f docker-compose.prod.yml exec moodle grep "wwwroot" /bitnami/moodle/config.php
+# Kết quả ĐÚNG phải là: $CFG->wwwroot = 'http://14.225.192.133:8080';
+# Nếu thiếu :8080 (chỉ có http://14.225.192.133), chạy lệnh fix sau:
+docker compose -f docker-compose.prod.yml exec moodle bash -c \
+  "sed -i -E \"s|wwwroot[[:space:]]*=[[:space:]]*'[^']*'|wwwroot = 'http://14.225.192.133:8080'|g\" /bitnami/moodle/config.php && grep wwwroot /bitnami/moodle/config.php"
 
-docker compose -f docker-compose.prod.yml \
-  cp moddle-lms/z-cleanup-users.sql mariadb:/tmp/cleanup.sql
-
-# 5.2 — Import DB chính (~3-5 phút)
-docker compose -f docker-compose.prod.yml exec mariadb bash -c \
-  "/opt/bitnami/mariadb/bin/mariadb -u bn_moodle -pbn_pass bitnami_moodle < /tmp/moodle.sql"
-
-# 5.3 — Chạy cleanup (xóa user test)
-docker compose -f docker-compose.prod.yml exec mariadb bash -c \
-  "/opt/bitnami/mariadb/bin/mariadb -u bn_moodle -pbn_pass bitnami_moodle < /tmp/cleanup.sql"
-
-# 5.4 — Cập nhật wwwroot
-docker compose -f docker-compose.prod.yml exec mariadb \
-  /opt/bitnami/mariadb/bin/mariadb -u bn_moodle -pbn_pass bitnami_moodle \
-  -e "UPDATE mdl_config SET value='http://14.225.192.133:8080' WHERE name='wwwroot';"
-
-# 5.5 — Xóa cache Moodle + restart
+# 5.2 — Xóa cache + restart để Moodle nhận config mới
 docker compose -f docker-compose.prod.yml exec moodle bash -c \
   "rm -rf /bitnami/moodledata/cache/* /bitnami/moodledata/localcache/* /bitnami/moodledata/temp/*"
 
 docker compose -f docker-compose.prod.yml restart moodle
 ```
 
-**Kiểm tra:** Truy cập `http://14.225.192.133:8080` → phải thấy tên site đúng + 24 khóa học.
+**Kiểm tra:** Truy cập `http://14.225.192.133:8080` → CSS phải load đúng, trang không bị vỡ layout.
+
+### Cấu hình Moodle sau khi cài mới
+
+Sau khi Moodle chạy ổn, cần thiết lập thủ công:
+
+**A. Enable Web Services (để backend gọi Moodle API):**
+1. Đăng nhập: `http://14.225.192.133:8080` với `admin` / `Admin@123`
+2. **Site Administration → Advanced features** → bật **Enable web services** → Save
+3. **Site Administration → Plugins → Web services → Manage protocols** → bật **REST protocol**
+4. **Site Administration → Plugins → Web services → External services** → thêm service mới:
+   - Name: `englishedu_backend` | Enable: ✓ | Authorised users only: ✓
+   - Thêm functions: `auth_userkey_request_login_url`, `core_user_*`, `core_course_*`, `enrol_manual_*`, `gradereport_user_*`
+5. **Site Administration → Plugins → Web services → Manage tokens** → tạo token cho `admin` với service trên
+
+**B. Enable auth_userkey plugin (SSO):**
+1. **Site Administration → Plugins → Authentication → Manage authentication** → bật **User key authentication**
+2. Cấu hình: mapping field = `email`, key lifetime = `60`
+
+**C. Áp dụng customization (nút "Quay lại Dashboard"):**
+1. **Site Administration → Appearance → Additional HTML**
+2. **Within HEAD**: dán nội dung phần 1 từ file `moddle-lms/moodle-customization.html`
+3. **Before BODY is closed**: dán nội dung phần 2 từ file `moddle-lms/moodle-customization.html`
+4. Save changes
 
 ---
 
@@ -253,22 +270,21 @@ ufw status
 
 ---
 
-## Xóa sạch và build lại từ đầu
+## Xóa sạch và build lại từ đầu (Fresh DB)
 
-Nếu gặp lỗi và cần reset hoàn toàn:
+Nếu muốn reset hoàn toàn (bao gồm Moodle DB mới):
 
 ```bash
 cd ~/EnglishEdu
 
-# Dừng tất cả + XÓA volumes (mất data)
-docker compose -f docker-compose.prod.yml down -v --remove-orphans --rmi all
+# Dừng tất cả + XÓA volumes (mất toàn bộ data Moodle, Postgres, MinIO)
+docker compose -f docker-compose.prod.yml down -v --remove-orphans
 
-# Xóa folder cũ
-cd ~
-rm -rf ~/EnglishEdu
-
-# Bắt đầu lại từ BƯỚC 2
+# Bắt đầu lại từ BƯỚC 4 (nếu đã có code) hoặc BƯỚC 2 (nếu cần pull code mới)
 ```
+
+> ⚠️ `down -v` xóa sạch volume → Moodle sẽ init DB mới từ đầu theo env vars.
+> Sau đó vào BƯỚC 5 để verify `wwwroot` và cấu hình Web Services thủ công.
 
 ---
 
