@@ -30,7 +30,7 @@
 | 6 | Moodle hiện "New Site" (DB trống) | `docker-entrypoint-initdb.d` không chạy với Bitnami image | Import thủ công |
 | 7 | Import SQL lỗi `ASCII '\0'` | PowerShell `>` xuất file UTF-16 (mỗi char thêm `0x00`) | Re-export với `--hex-blob` + encoding UTF-8 không BOM |
 | 8 | Env vars trống (WARN) | Chạy lệnh thiếu `--env-file .env.prod` | Đúng lệnh |
-| 9 | Moodle login redirect về port 80 (trang chủ frontend) | `wwwroot` trong `config.php` bị Bitnami set thiếu port 8080 khi restart; lệnh `UPDATE mdl_config WHERE name='wwwroot'` vô tác dụng vì key không tồn tại trong DB | Fix trực tiếp `config.php` bằng `sed` sau khi restart (xem bước 5.4b) |
+| 9 | Moodle báo "invalid URL" + CSS không load | Bitnami sinh config.php với PHP concatenation sai: `'http://IP:8080' . 'IP'` → evaluate ra URL vô nghĩa. Sed cũ chỉ replace chuỗi quoted đầu, để lại phần `. 'IP'` | Dùng `sed` replace **toàn bộ dòng** `$CFG->wwwroot` (xem bước 5.1) |
 | 10 | Nút "Về trang chủ" trong Moodle trỏ về `localhost:3000` | `additionalhtmlfooter` trong DB export dùng URL dev hardcoded | Chạy UPDATE SQL sửa URL sau khi import (bước 5.4c) |
 
 ---
@@ -178,12 +178,18 @@ docker compose -f docker-compose.prod.yml logs -f moodle
 # Chờ thấy: "moodle | INFO  ==> Starting Moodle..." hoặc Apache started
 # Ctrl+C để thoát
 
-# 5.1 — Kiểm tra wwwroot trong config.php (QUAN TRỌNG — nguyên nhân CSS không load)
+# 5.1 — Kiểm tra wwwroot trong config.php (QUAN TRỌNG — nguyên nhân CSS không load & invalid URL)
 docker compose -f docker-compose.prod.yml exec moodle grep "wwwroot" /bitnami/moodle/config.php
-# Kết quả ĐÚNG phải là: $CFG->wwwroot = 'http://14.225.192.133:8080';
-# Nếu thiếu :8080 (chỉ có http://14.225.192.133), chạy lệnh fix sau:
+# Kết quả ĐÚNG phải là MỘT dòng duy nhất: $CFG->wwwroot   = 'http://<IP>:8080';
+#
+# LỖI THƯỜNG GẶP — Bitnami sinh ra PHP concatenation sai dạng:
+#   $CFG->wwwroot = 'http://IP:8080' . 'IP';   ← invalid URL khi evaluate!
+# Nguyên nhân: sed chỉ replace chuỗi quoted đầu tiên, để lại phần '. IP' phía sau.
+#
+# FIX: replace TOÀN BỘ dòng wwwroot (thay IP bằng IP thực của server):
 docker compose -f docker-compose.prod.yml exec moodle bash -c \
-  "sed -i -E \"s|wwwroot[[:space:]]*=[[:space:]]*'[^']*'|wwwroot = 'http://14.225.192.133:8080'|g\" /bitnami/moodle/config.php && grep wwwroot /bitnami/moodle/config.php"
+  "sed -i \"s|\\\$CFG->wwwroot.*|\\\$CFG->wwwroot   = 'http://221.132.21.13:8080';|\" /bitnami/moodle/config.php && grep wwwroot /bitnami/moodle/config.php"
+# Sau khi chạy, grep phải cho đúng 1 dòng: $CFG->wwwroot   = 'http://221.132.21.13:8080';
 
 # 5.2 — Xóa cache + restart để Moodle nhận config mới
 docker compose -f docker-compose.prod.yml exec moodle bash -c \
@@ -192,24 +198,35 @@ docker compose -f docker-compose.prod.yml exec moodle bash -c \
 docker compose -f docker-compose.prod.yml restart moodle
 ```
 
-**Kiểm tra:** Truy cập `http://14.225.192.133:8080` → CSS phải load đúng, trang không bị vỡ layout.
+**Kiểm tra:** Truy cập `http://221.132.21.13:8080` → CSS phải load đúng, trang không bị vỡ layout.
 
 ### Cấu hình Moodle sau khi cài mới
 
 Sau khi Moodle chạy ổn, cần thiết lập thủ công:
 
-**A. Enable Web Services (để backend gọi Moodle API):**
+**A. Enable auth_userkey plugin trước (BẮT BUỘC làm trước bước B):**
+> ⚠️ Phải bật plugin này trước — nếu không, function `auth_userkey_request_login_url` sẽ không xuất hiện trong danh sách khi add vào External Service.
 1. Đăng nhập: `http://14.225.192.133:8080` với `admin` / `Admin@123`
-2. **Site Administration → Advanced features** → bật **Enable web services** → Save
-3. **Site Administration → Plugins → Web services → Manage protocols** → bật **REST protocol**
-4. **Site Administration → Plugins → Web services → External services** → thêm service mới:
-   - Name: `englishedu_backend` | Enable: ✓ | Authorised users only: ✓
-   - Thêm functions: `auth_userkey_request_login_url`, `core_user_*`, `core_course_*`, `enrol_manual_*`, `gradereport_user_*`
-5. **Site Administration → Plugins → Web services → Manage tokens** → tạo token cho `admin` với service trên
+2. **Site Administration → Plugins → Authentication → Manage authentication** → bật **User key authentication**
+3. Cấu hình: mapping field = `email`, key lifetime = `60`
 
-**B. Enable auth_userkey plugin (SSO):**
-1. **Site Administration → Plugins → Authentication → Manage authentication** → bật **User key authentication**
-2. Cấu hình: mapping field = `email`, key lifetime = `60`
+**B. Enable Web Services (để backend gọi Moodle API):**
+1. **Site Administration → Advanced features** → bật **Enable web services** → Save
+2. **Site Administration → Plugins → Web services → Manage protocols** → bật **REST protocol**
+3. **Site Administration → Plugins → Web services → External services** → thêm service mới:
+   - Name: `englishedu_backend` | Enable: ✓ | Authorised users only: ✓
+   - Thêm **từng** function sau (Moodle không hỗ trợ wildcard `*` khi add):
+     - `auth_userkey_request_login_url`
+     - `core_user_create_users`
+     - `core_user_get_users_by_field`
+     - `core_course_create_courses`
+     - `core_course_get_courses`
+     - `core_course_get_courses_by_field`
+     - `core_course_get_contents`
+     - `enrol_manual_enrol_users`
+     - `enrol_manual_unenrol_users`
+     - `gradereport_user_get_grade_items`
+4. **Site Administration → Plugins → Web services → Manage tokens** → tạo token cho `admin` với service trên
 
 **C. Áp dụng customization (nút "Quay lại Dashboard"):**
 1. **Site Administration → Appearance → Additional HTML**
