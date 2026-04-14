@@ -12,13 +12,15 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/*
 
 # Download auth_userkey plugin and place it in the auth directory
+# Bitnami runs as UID 1001 — files MUST be owned by 1001:root
 RUN cd /tmp && \
     curl -L -o userkey.zip \
       "https://github.com/catalyst/moodle-auth_userkey/archive/refs/heads/MOODLE_33PLUS.zip" && \
     unzip -q userkey.zip && \
     mkdir -p /opt/bitnami/moodle/auth/userkey && \
     cp -r moodle-auth_userkey-MOODLE_33PLUS/. /opt/bitnami/moodle/auth/userkey/ && \
-    chown -R daemon:daemon /opt/bitnami/moodle/auth/userkey && \
+    chown -R 1001:root /opt/bitnami/moodle/auth/userkey && \
+    chmod -R g+rwX /opt/bitnami/moodle/auth/userkey && \
     rm -rf userkey.zip moodle-auth_userkey-MOODLE_33PLUS
 
 # Copy the entrypoint helper that fixes wwwroot after Bitnami init

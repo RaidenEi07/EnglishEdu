@@ -27,6 +27,6 @@ fi
 # Ensure auth_userkey plugin is in place (volume may overwrite /bitnami/moodle)
 if [ ! -d "/bitnami/moodle/auth/userkey" ] && [ -d "/opt/bitnami/moodle/auth/userkey" ]; then
   cp -r /opt/bitnami/moodle/auth/userkey /bitnami/moodle/auth/userkey
-  chown -R daemon:daemon /bitnami/moodle/auth/userkey
+  chown -R 1001:root /bitnami/moodle/auth/userkey
   echo "[fix-wwwroot] Copied auth_userkey plugin into volume"
 fi
