@@ -137,7 +137,10 @@ services:
 
   # ─── Moodle LMS ───────────────────────────────────────────
   moodle:
-    image: bitnamilegacy/moodle:4.5
+    build:
+      context: ./moddle-lms
+      dockerfile: Dockerfile
+    image: englishedu-moodle:4.5
     ports:
       - "8080:8080"
     environment:

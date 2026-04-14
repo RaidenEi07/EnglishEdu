@@ -32,6 +32,7 @@
 | 8 | Env vars trống (WARN) | Chạy lệnh thiếu `--env-file .env.prod` | Đúng lệnh |
 | 9 | Moodle báo "invalid URL" + CSS không load | Bitnami sinh config.php với PHP concatenation sai: `'http://IP:8080' . 'IP'` → evaluate ra URL vô nghĩa. Sed cũ chỉ replace chuỗi quoted đầu, để lại phần `. 'IP'` | Dùng `sed` replace **toàn bộ dòng** `$CFG->wwwroot` (xem bước 5.1) |
 | 10 | Nút "Về trang chủ" trong Moodle trỏ về `localhost:3000` | `additionalhtmlfooter` trong DB export dùng URL dev hardcoded | Chạy UPDATE SQL sửa URL sau khi import (bước 5.4c) |
+| 11 | Không cài được `auth_userkey` plugin (container thiếu `curl`, `wget`, `unzip`) | Bitnami Moodle image là minimal — không có network tools | Build custom Dockerfile (`moddle-lms/Dockerfile`) bake plugin vào image, kèm script `fix-wwwroot.sh` tự fix config |
 
 ---
 
@@ -205,10 +206,12 @@ docker compose -f docker-compose.prod.yml restart moodle
 Sau khi Moodle chạy ổn, cần thiết lập thủ công:
 
 **A. Enable auth_userkey plugin trước (BẮT BUỘC làm trước bước B):**
-> ⚠️ Phải bật plugin này trước — nếu không, function `auth_userkey_request_login_url` sẽ không xuất hiện trong danh sách khi add vào External Service.
-1. Đăng nhập: `http://14.225.192.133:8080` với `admin` / `Admin@123`
-2. **Site Administration → Plugins → Authentication → Manage authentication** → bật **User key authentication**
-3. Cấu hình: mapping field = `email`, key lifetime = `60`
+> ✅ Plugin `auth_userkey` đã được bake sẵn trong Docker image (`moddle-lms/Dockerfile`).
+> Không cần cài thủ công — chỉ cần bật trong UI.
+1. Đăng nhập: `http://<IP>:8080` với `admin` / mật khẩu trong `.env.prod`
+2. Nếu Moodle hiện trang **Notifications** với "Database upgrade" → click **Upgrade Moodle database now**
+3. **Site Administration → Plugins → Authentication → Manage authentication** → bật **User key authentication**
+4. Cấu hình: mapping field = `email`, key lifetime = `60`
 
 **B. Enable Web Services (để backend gọi Moodle API):**
 1. **Site Administration → Advanced features** → bật **Enable web services** → Save
