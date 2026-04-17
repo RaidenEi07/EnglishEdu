@@ -111,7 +111,14 @@ public class UserService {
                 .active(true)
                 .build();
         User saved = userRepository.save(user);
-        try { moodleSyncService.ensureMoodleUser(saved); } catch (Exception e) { log.warn("Moodle user sync failed: {}", e.getMessage()); }
+        // Sync to Moodle within the SAME transaction (avoid REQUIRES_NEW deadlock)
+        try {
+            moodleSyncService.provisionMoodleUser(saved);
+            userRepository.save(saved);
+            log.info("User '{}' synced to Moodle (moodleId={})", saved.getUsername(), saved.getMoodleId());
+        } catch (Exception e) {
+            log.warn("Moodle user sync failed for '{}': {}", saved.getUsername(), e.getMessage());
+        }
         return userMapper.toResponse(saved);
     }
 

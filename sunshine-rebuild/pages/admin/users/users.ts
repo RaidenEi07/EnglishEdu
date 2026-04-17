@@ -39,9 +39,12 @@ function renderRow(u: UserResponse): string {
   const active = u.active
     ? '<span class="badge bg-success-subtle text-success">Hoạt động</span>'
     : '<span class="badge bg-secondary">Tắt</span>';
+  const moodleSync = u.moodleId
+    ? '<span class="badge bg-info-subtle text-info" title="Moodle ID: ' + u.moodleId + '"><i class="fa fa-link"></i></span>'
+    : '<span class="badge bg-warning-subtle text-warning" title="Chưa đồng bộ Moodle"><i class="fa fa-unlink"></i></span>';
   return `<tr>
     <td class="text-muted small">${u.id}</td>
-    <td><span class="fw-medium">${escHtml(u.username)}</span></td>
+    <td><span class="fw-medium">${escHtml(u.username)}</span> ${moodleSync}</td>
     <td class="d-none d-md-table-cell">${escHtml(u.firstName || '')} ${escHtml(u.lastName || '')}</td>
     <td class="d-none d-lg-table-cell small">${escHtml(u.email)}</td>
     <td>${roleBadge(u.role)}</td>
@@ -242,9 +245,12 @@ async function saveNewUser(): Promise<void> {
   };
   saveBtn.disabled = true;
   try {
-    await apiPost('/admin/users', payload);
+    const result = await apiPost<UserResponse>('/admin/users', payload);
     createUserModalInstance?.hide();
-    toast.success(`Tài khoản "${username}" đã được tạo thành công.`);
+    const moodleStatus = result.moodleId
+      ? ` (Moodle ID: ${result.moodleId})`
+      : ' (⚠ Chưa đồng bộ Moodle)';
+    toast.success(`Tài khoản "${username}" đã được tạo thành công${moodleStatus}.`);
     loadUsers(0);
   } catch (err: any) {
     alertEl.className   = 'alert alert-danger';

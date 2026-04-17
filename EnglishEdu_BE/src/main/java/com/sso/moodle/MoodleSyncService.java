@@ -44,23 +44,22 @@ public class MoodleSyncService {
     /* ─────────── User sync ─────────────────────────────────── */
 
     /**
-     * Ensure the user exists on Moodle.  If not, create them.
-     * Stores the moodleId back on the User entity.
-     * Uses REQUIRES_NEW so Moodle API failures don't taint the caller's transaction.
+     * Provision user on Moodle (create if absent) and obtain a per-user token.
+     * Does NOT persist the moodleId/moodleToken – the caller's transaction does that.
+     * This avoids the REQUIRES_NEW deadlock when the caller already holds a lock on the user row.
+     *
+     * @return the Moodle user id
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public long ensureMoodleUser(User user) {
+    public long provisionMoodleUser(User user) {
         if (user.getMoodleId() != null) {
             return user.getMoodleId();
         }
 
-        // Check if user already exists on Moodle by username
         JsonNode existing = moodleClient.getUserByUsername(user.getUsername());
         long moodleId;
         if (existing != null) {
             moodleId = existing.path("id").asLong();
         } else {
-            // Generate a random password for the Moodle account
             String moodlePassword = "Sso!" + generateRandomHex(12);
             moodleId = moodleClient.createUser(
                     user.getUsername(),
@@ -71,7 +70,6 @@ public class MoodleSyncService {
             );
             log.info("Created Moodle user {} (moodleId={})", user.getUsername(), moodleId);
 
-            // Immediately obtain a per-user token for student-context API calls
             try {
                 String token = moodleClient.requestUserToken(
                         user.getUsername(), moodlePassword, moodleProperties.getServiceName());
@@ -82,6 +80,20 @@ public class MoodleSyncService {
         }
 
         user.setMoodleId(moodleId);
+        return moodleId;
+    }
+
+    /**
+     * Ensure the user exists on Moodle.  If not, create them.
+     * Stores the moodleId back on the User entity.
+     * Uses REQUIRES_NEW so Moodle API failures don't taint the caller's transaction.
+     *
+     * WARNING: Do NOT call from a method that already holds a write-lock on the same User row
+     * (e.g. createUser / register). Use {@link #provisionMoodleUser(User)} instead.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public long ensureMoodleUser(User user) {
+        long moodleId = provisionMoodleUser(user);
         userRepository.save(user);
         return moodleId;
     }
@@ -265,6 +277,7 @@ public class MoodleSyncService {
 
     /**
      * Sync all existing users to Moodle (admin-triggered).
+     * Uses provisionMoodleUser (no REQUIRES_NEW) to avoid deadlocks.
      * Returns count of newly synced users.
      */
     @Transactional
@@ -274,8 +287,10 @@ public class MoodleSyncService {
         for (User u : users) {
             if (u.getMoodleId() == null && !u.isGuest()) {
                 try {
-                    ensureMoodleUser(u);
+                    provisionMoodleUser(u);
+                    userRepository.save(u);
                     count++;
+                    log.info("Synced user '{}' to Moodle (moodleId={})", u.getUsername(), u.getMoodleId());
                 } catch (Exception e) {
                     log.warn("Failed to sync user '{}' to Moodle: {}", u.getUsername(), e.getMessage());
                 }

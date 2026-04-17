@@ -68,9 +68,11 @@ public class AuthService {
 
         User saved = userRepository.save(user);
 
-        // Clone account to Moodle immediately – errors are non-fatal
+        // Sync to Moodle within the SAME transaction (avoid REQUIRES_NEW deadlock)
         try {
-            moodleSyncService.ensureMoodleUser(saved);
+            moodleSyncService.provisionMoodleUser(saved);
+            userRepository.save(saved);
+            log.info("New registration '{}' synced to Moodle (moodleId={})", saved.getUsername(), saved.getMoodleId());
         } catch (Exception e) {
             log.warn("Moodle user sync on register failed for '{}': {}", saved.getUsername(), e.getMessage());
         }
