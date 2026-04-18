@@ -40,7 +40,7 @@ public class MoodleClient {
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                .followRedirects(HttpClient.Redirect.NEVER)  // Handle redirects manually: 303 converts POST→GET, losing POST body
                 .build();
         // RestClient is lazy-initialized — avoids startup crash when MOODLE_URL is not yet set
     }
@@ -104,18 +104,31 @@ public class MoodleClient {
             HttpResponse<String> httpResponse =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-            String responseBody = httpResponse.body();
             int statusCode = httpResponse.statusCode();
+
+            // Handle redirect manually — re-POST to Location with same body.
+            // Do NOT use followRedirects(NORMAL): HTTP 303 converts POST→GET, dropping the POST body
+            // (including wstoken), which causes Moodle to return "invalidtoken".
+            if (statusCode >= 300 && statusCode < 400) {
+                String location = httpResponse.headers().firstValue("Location").orElse(null);
+                if (location == null) {
+                    throw new MoodleApiException("Moodle redirected (HTTP " + statusCode + ") but no Location header");
+                }
+                log.info("Moodle {} redirect → re-POST to {} (func={})", statusCode, location, wsFunction);
+                HttpRequest redirectRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(location))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .timeout(Duration.ofSeconds(30))
+                        .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
+                        .build();
+                httpResponse = httpClient.send(redirectRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                statusCode = httpResponse.statusCode();
+                log.info("Moodle after redirect ← func={} status={}", wsFunction, statusCode);
+            }
+
+            String responseBody = httpResponse.body();
             log.info("Moodle API ← func={} status={} body_len={}", wsFunction, statusCode,
                     responseBody != null ? responseBody.length() : 0);
-
-            // Detect redirects (301/302) — usually means wwwroot mismatch
-            if (statusCode == 301 || statusCode == 302 || statusCode == 303 || statusCode == 307) {
-                String location = httpResponse.headers().firstValue("Location").orElse("?");
-                log.error("Moodle redirected func={} status={} Location={}. MOODLE_URL={}", wsFunction, statusCode, location, baseUrl);
-                throw new MoodleApiException("Moodle redirected to " + location
-                        + " — MOODLE_PUBLIC_URL must match Moodle wwwroot setting.");
-            }
 
             // Detect XML error response — Moodle returns XML for auth errors (invalidtoken etc.)
             // even when moodlewsrestformat=json is requested.
