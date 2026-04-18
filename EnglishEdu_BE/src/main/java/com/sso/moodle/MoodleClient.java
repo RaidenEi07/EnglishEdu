@@ -40,6 +40,7 @@ public class MoodleClient {
         this.objectMapper = new ObjectMapper();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
+                .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         // RestClient is lazy-initialized — avoids startup crash when MOODLE_URL is not yet set
     }
