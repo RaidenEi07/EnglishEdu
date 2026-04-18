@@ -120,6 +120,39 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_success_setsMoodleIdOnUser() {
+        when(userRepository.existsByUsername("carol")).thenReturn(false);
+        when(userRepository.existsByEmail("carol@x.com")).thenReturn(false);
+        when(passwordEncoder.encode("Secret1")).thenReturn("hashed");
+
+        User saved = buildUser(3L, "carol");
+        when(userRepository.save(any(User.class))).thenReturn(saved);
+        when(tokenProvider.generateToken(3L, "carol")).thenReturn("jwt-carol");
+        when(userMapper.toResponse(any(User.class))).thenReturn(buildResponse(saved));
+
+        // Simulate provisionMoodleUser setting moodleId on the entity
+        doAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setMoodleId(42L);
+            return 42L;
+        }).when(moodleSyncService).provisionMoodleUser(any(User.class));
+
+        RegisterRequest req = new RegisterRequest();
+        req.setUsername("carol");
+        req.setEmail("carol@x.com");
+        req.setPassword("Secret1");
+
+        AuthResponse result = authService.register(req);
+
+        assertThat(result.getToken()).isEqualTo("jwt-carol");
+        // Verify moodleId was set and persisted
+        assertThat(saved.getMoodleId()).isEqualTo(42L);
+        // Verify save was called twice: initial create + after Moodle sync
+        verify(userRepository, times(2)).save(any(User.class));
+        verify(moodleSyncService).provisionMoodleUser(saved);
+    }
+
+    @Test
     void register_moodleSyncFailure_doesNotAbortRegistration() {
         when(userRepository.existsByUsername("bob")).thenReturn(false);
         when(userRepository.existsByEmail("bob@x.com")).thenReturn(false);

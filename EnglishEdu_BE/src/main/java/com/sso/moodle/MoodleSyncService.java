@@ -55,10 +55,17 @@ public class MoodleSyncService {
             return user.getMoodleId();
         }
 
+        // Guard: skip if Moodle is not configured
+        String moodleUrl = moodleProperties.getUrl();
+        String moodleToken = moodleProperties.getToken();
+        if (moodleUrl == null || moodleUrl.isBlank()) {
+            throw new MoodleApiException("Moodle URL is not configured — cannot sync user");
+        }
+        if (moodleToken == null || moodleToken.isBlank()) {
+            throw new MoodleApiException("Moodle token is not configured — set MOODLE_TOKEN env var");
+        }
+
         log.info("[MoodleSync] Provisioning user '{}' (email={}) on Moodle…", user.getUsername(), user.getEmail());
-        log.info("[MoodleSync] Moodle URL={}, token configured={}",
-                moodleProperties.getUrl(),
-                moodleProperties.getToken() != null && !moodleProperties.getToken().isBlank());
 
         // Step 1: Try to find existing user on Moodle by username, then by email
         JsonNode existing = null;

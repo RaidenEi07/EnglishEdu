@@ -217,6 +217,38 @@ class UserServiceTest {
         verify(passwordEncoder).encode("pass1234");
     }
 
+    @Test
+    void createUser_success_setsMoodleIdOnUser() {
+        when(userRepository.existsByUsername("newuser2")).thenReturn(false);
+        when(userRepository.existsByEmail("new2@x.com")).thenReturn(false);
+        when(passwordEncoder.encode("pass1234")).thenReturn("hashed");
+
+        User savedUser = buildUser(11L);
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userMapper.toResponse(any(User.class))).thenReturn(buildResponse(savedUser));
+
+        // Simulate provisionMoodleUser setting moodleId on the entity
+        doAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setMoodleId(99L);
+            return 99L;
+        }).when(moodleSyncService).provisionMoodleUser(any(User.class));
+
+        CreateAdminUserRequest req = new CreateAdminUserRequest();
+        req.setUsername("newuser2");
+        req.setEmail("new2@x.com");
+        req.setPassword("pass1234");
+
+        UserResponse result = userService.createUser(req);
+
+        assertThat(result).isNotNull();
+        // Verify moodleId was set on the entity
+        assertThat(savedUser.getMoodleId()).isEqualTo(99L);
+        // Verify save was called twice: initial create + after Moodle sync
+        verify(userRepository, times(2)).save(any(User.class));
+        verify(moodleSyncService).provisionMoodleUser(savedUser);
+    }
+
     // ── toggleUserActive ────────────────────────────────────────
 
     @Test

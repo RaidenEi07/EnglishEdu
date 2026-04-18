@@ -68,9 +68,18 @@ public class MoodleClient {
      * silently corrupt or drop the body on Spring Boot 4 / Framework 7.
      */
     public JsonNode call(String wsFunction, Map<String, String> params) {
+        String token = props.getToken();
+        if (token == null || token.isBlank()) {
+            throw new MoodleApiException("Moodle token is not configured — set MOODLE_TOKEN env var");
+        }
+        String baseUrl = props.getUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            throw new MoodleApiException("Moodle URL is not configured — set MOODLE_URL env var");
+        }
+
         // Build form body exactly like curl
         Map<String, String> allParams = new LinkedHashMap<>();
-        allParams.put("wstoken", props.getToken());
+        allParams.put("wstoken", token);
         allParams.put("wsfunction", wsFunction);
         allParams.put("moodlewsrestformat", "json");
         allParams.putAll(params);
@@ -79,7 +88,7 @@ public class MoodleClient {
                 .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
                 .collect(Collectors.joining("&"));
 
-        String endpoint = props.getUrl() + "/webservice/rest/server.php";
+        String endpoint = baseUrl + "/webservice/rest/server.php";
 
         log.info("Moodle API → POST func={} params={}", wsFunction, params.keySet());
 
@@ -152,23 +161,19 @@ public class MoodleClient {
 
     /**
      * Create a user on Moodle. Returns the moodle user id.
-     * Note: Moodle requires lowercase usernames — username is lowercased automatically.
      */
     public long createUser(String username, String password, String email,
                            String firstName, String lastName) {
-        // Moodle validates and stores usernames as lowercase
-        String moodleUsername = username.toLowerCase();
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("users[0][username]", moodleUsername);
+        params.put("users[0][username]", username);
         params.put("users[0][password]", password);
         params.put("users[0][email]", email);
-        params.put("users[0][firstname]", firstName != null ? firstName : moodleUsername);
+        params.put("users[0][firstname]", firstName != null ? firstName : username);
         params.put("users[0][lastname]", lastName != null ? lastName : ".");
         params.put("users[0][auth]", "manual");
 
         JsonNode result = call("core_user_create_users", params);
-        // Moodle returns [{"id":...,"username":...}] on success
-        JsonNode created = extractFirstFromResult(result);
+        JsonNode created = result.isArray() ? result.get(0) : null;
         if (created == null || !created.has("id")) {
             throw new MoodleApiException("core_user_create_users returned unexpected response: " + result);
         }
@@ -177,14 +182,13 @@ public class MoodleClient {
 
     /**
      * Get Moodle user by username. Returns null if not found.
-     * Searches using lowercase username (Moodle stores all usernames lowercase).
      */
     public JsonNode getUserByUsername(String username) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("field", "username");
-        params.put("values[0]", username.toLowerCase());
+        params.put("values[0]", username);
         JsonNode result = call("core_user_get_users_by_field", params);
-        return extractFirstFromResult(result);
+        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
     }
 
     /**
@@ -195,27 +199,7 @@ public class MoodleClient {
         params.put("field", "email");
         params.put("values[0]", email);
         JsonNode result = call("core_user_get_users_by_field", params);
-        return extractFirstFromResult(result);
-    }
-
-    /**
-     * Extract the first user object from a Moodle API response.
-     * Handles two formats:
-     *   - Plain array:   [{...}, ...]
-     *   - Wrapped object: {"users": [{...}, ...]}
-     * Returns null if no users found.
-     */
-    private JsonNode extractFirstFromResult(JsonNode result) {
-        if (result == null || result.isNull()) return null;
-        if (result.isArray()) {
-            return result.isEmpty() ? null : result.get(0);
-        }
-        // Handle wrapped format {"users":[...]} returned by some Moodle versions
-        if (result.isObject() && result.has("users")) {
-            JsonNode users = result.get("users");
-            return (users.isArray() && !users.isEmpty()) ? users.get(0) : null;
-        }
-        return null;
+        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
     }
 
     /**
@@ -245,7 +229,7 @@ public class MoodleClient {
         params.put("courses[0][visible]", "1");
 
         JsonNode result = call("core_course_create_courses", params);
-        JsonNode created = extractFirstFromResult(result);
+        JsonNode created = result.isArray() ? result.get(0) : null;
         if (created == null || !created.has("id")) {
             throw new MoodleApiException("core_course_create_courses returned unexpected response: " + result);
         }
