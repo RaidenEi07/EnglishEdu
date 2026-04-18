@@ -117,14 +117,24 @@ public class MoodleClient {
                         + " — MOODLE_PUBLIC_URL must match Moodle wwwroot setting.");
             }
 
-            // Detect HTML response (Moodle returning error page instead of JSON)
+            // Detect XML error response — Moodle returns XML for auth errors (invalidtoken etc.)
+            // even when moodlewsrestformat=json is requested.
+            if (responseBody != null && responseBody.trim().startsWith("<?xml")) {
+                String errorCode = extractXmlValue(responseBody, "ERRORCODE");
+                String message   = extractXmlValue(responseBody, "MESSAGE");
+                if (errorCode == null) errorCode = "unknown";
+                if (message   == null) message   = responseBody.substring(0, Math.min(300, responseBody.length()));
+                log.error("Moodle XML error for func={} errorcode={} message={}", wsFunction, errorCode, message);
+                throw new MoodleApiException("Moodle error [" + errorCode + "]: " + message);
+            }
+
+            // Detect HTML response (Moodle login page etc.)
             if (responseBody != null && responseBody.trim().startsWith("<")) {
                 log.error("Moodle returned HTML for func={} status={} preview={}",
                         wsFunction, statusCode,
-                        responseBody.substring(0, Math.min(500, responseBody.length())));
-                throw new MoodleApiException("Moodle returned HTML (not JSON) for " + wsFunction
-                        + ". Token may be invalid/empty, or 'Enable web services' not turned on. "
-                        + "Check backend logs for HTML content.");
+                        responseBody.substring(0, Math.min(300, responseBody.length())));
+                throw new MoodleApiException("Moodle returned HTML for " + wsFunction
+                        + ". Check MOODLE_TOKEN is set and REST protocol is enabled.");
             }
 
             if (responseBody == null || responseBody.isBlank()) {
@@ -817,5 +827,17 @@ public class MoodleClient {
 
     private static String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    /** Extract text content of a simple XML tag from Moodle XML error responses. */
+    private static String extractXmlValue(String xml, String tag) {
+        String open  = "<"  + tag + ">";
+        String close = "</" + tag + ">";
+        int start = xml.indexOf(open);
+        if (start < 0) return null;
+        start += open.length();
+        int end = xml.indexOf(close, start);
+        if (end < 0) return null;
+        return xml.substring(start, end).trim();
     }
 }
