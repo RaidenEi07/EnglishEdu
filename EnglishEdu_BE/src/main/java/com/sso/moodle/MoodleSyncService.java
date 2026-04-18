@@ -55,10 +55,16 @@ public class MoodleSyncService {
             return user.getMoodleId();
         }
 
+        log.info("[MoodleSync] Provisioning user '{}' (email={}) on Moodle…", user.getUsername(), user.getEmail());
+        log.info("[MoodleSync] Moodle URL={}, token configured={}",
+                moodleProperties.getUrl(),
+                moodleProperties.getToken() != null && !moodleProperties.getToken().isBlank());
+
         JsonNode existing = moodleClient.getUserByUsername(user.getUsername());
         long moodleId;
         if (existing != null) {
             moodleId = existing.path("id").asLong();
+            log.info("[MoodleSync] User '{}' already exists on Moodle (moodleId={})", user.getUsername(), moodleId);
         } else {
             String moodlePassword = "Sso!" + generateRandomHex(12);
             moodleId = moodleClient.createUser(
@@ -68,14 +74,14 @@ public class MoodleSyncService {
                     user.getFirstName() != null ? user.getFirstName() : user.getUsername(),
                     user.getLastName() != null ? user.getLastName() : "."
             );
-            log.info("Created Moodle user {} (moodleId={})", user.getUsername(), moodleId);
+            log.info("[MoodleSync] Created Moodle user '{}' (moodleId={})", user.getUsername(), moodleId);
 
             try {
                 String token = moodleClient.requestUserToken(
                         user.getUsername(), moodlePassword, moodleProperties.getServiceName());
                 user.setMoodleToken(token);
             } catch (Exception e) {
-                log.warn("Could not obtain Moodle token for new user {}: {}", user.getUsername(), e.getMessage());
+                log.warn("[MoodleSync] Could not obtain Moodle token for '{}': {}", user.getUsername(), e.getMessage());
             }
         }
 
@@ -278,25 +284,144 @@ public class MoodleSyncService {
     /**
      * Sync all existing users to Moodle (admin-triggered).
      * Uses provisionMoodleUser (no REQUIRES_NEW) to avoid deadlocks.
-     * Returns count of newly synced users.
+     * Returns a result map with synced count, errors, and total.
+     */
+    @Transactional
+    public java.util.Map<String, Object> syncAllUsersDetailed() {
+        var users = userRepository.findAll();
+        int synced = 0;
+        int skipped = 0;
+        var errors = new java.util.ArrayList<String>();
+
+        // Quick connection pre-check
+        try {
+            moodleClient.getSiteInfo();
+        } catch (Exception e) {
+            log.error("[MoodleSync] Cannot connect to Moodle: {}", e.getMessage());
+            return java.util.Map.of(
+                    "synced", 0,
+                    "total", users.size(),
+                    "error", "Cannot connect to Moodle: " + e.getMessage()
+            );
+        }
+
+        for (User u : users) {
+            if (u.getMoodleId() != null || u.isGuest()) {
+                skipped++;
+                continue;
+            }
+            try {
+                provisionMoodleUser(u);
+                userRepository.save(u);
+                synced++;
+                log.info("[MoodleSync] Synced user '{}' → moodleId={}", u.getUsername(), u.getMoodleId());
+            } catch (Exception e) {
+                String msg = u.getUsername() + ": " + e.getMessage();
+                errors.add(msg);
+                log.error("[MoodleSync] FAILED to sync user '{}': {}", u.getUsername(), e.getMessage(), e);
+            }
+        }
+
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("synced", synced);
+        result.put("skipped", skipped);
+        result.put("total", users.size());
+        if (!errors.isEmpty()) {
+            result.put("errors", errors);
+        }
+        return result;
+    }
+
+    /**
+     * Simple version for backward compatibility.
      */
     @Transactional
     public int syncAllUsers() {
-        var users = userRepository.findAll();
-        int count = 0;
-        for (User u : users) {
-            if (u.getMoodleId() == null && !u.isGuest()) {
-                try {
-                    provisionMoodleUser(u);
-                    userRepository.save(u);
-                    count++;
-                    log.info("Synced user '{}' to Moodle (moodleId={})", u.getUsername(), u.getMoodleId());
-                } catch (Exception e) {
-                    log.warn("Failed to sync user '{}' to Moodle: {}", u.getUsername(), e.getMessage());
+        var result = syncAllUsersDetailed();
+        return (int) result.getOrDefault("synced", 0);
+    }
+
+    /**
+     * Import users from Moodle into EnglishEdu.
+     * Users that already exist (matched by username or email) are linked but not duplicated.
+     * Returns a result map with imported count, linked count, and errors.
+     */
+    @Transactional
+    public java.util.Map<String, Object> importUsersFromMoodle() {
+        int imported = 0;
+        int linked = 0;
+        var errors = new java.util.ArrayList<String>();
+
+        JsonNode moodleUsers;
+        try {
+            moodleUsers = moodleClient.getAllUsers();
+        } catch (Exception e) {
+            log.error("[MoodleSync] Cannot fetch users from Moodle: {}", e.getMessage());
+            return java.util.Map.of("imported", 0, "error", "Cannot fetch Moodle users: " + e.getMessage());
+        }
+
+        if (moodleUsers == null || !moodleUsers.isArray()) {
+            return java.util.Map.of("imported", 0, "error", "Moodle returned no user data");
+        }
+
+        for (JsonNode mu : moodleUsers) {
+            long moodleId = mu.path("id").asLong();
+            String username = mu.path("username").asText("").trim();
+            String email = mu.path("email").asText("").trim();
+            String firstName = mu.path("firstname").asText("");
+            String lastName = mu.path("lastname").asText("");
+
+            // Skip system users
+            if (moodleId <= 1 || username.isEmpty() || "guest".equalsIgnoreCase(username)
+                    || username.startsWith("guest_")) {
+                continue;
+            }
+
+            try {
+                // Try to find existing user by username or email
+                User existing = userRepository.findByUsername(username).orElse(null);
+                if (existing == null && !email.isEmpty()) {
+                    existing = userRepository.findByEmail(email).orElse(null);
                 }
+
+                if (existing != null) {
+                    if (existing.getMoodleId() == null) {
+                        existing.setMoodleId(moodleId);
+                        userRepository.save(existing);
+                        linked++;
+                        log.info("[MoodleSync] Linked existing user '{}' → moodleId={}", existing.getUsername(), moodleId);
+                    }
+                    // Already linked, skip
+                } else {
+                    // Create new local user for this Moodle user
+                    User newUser = User.builder()
+                            .username(username)
+                            .email(email.isEmpty() ? username + "@moodle.local" : email)
+                            .password("$2a$10$MOODLE_IMPORTED_NO_LOCAL_LOGIN") // not a valid bcrypt, can't login locally
+                            .firstName(firstName.isEmpty() ? username : firstName)
+                            .lastName(lastName.isEmpty() ? "." : lastName)
+                            .role("STUDENT")
+                            .active(true)
+                            .moodleId(moodleId)
+                            .build();
+                    userRepository.save(newUser);
+                    imported++;
+                    log.info("[MoodleSync] Imported Moodle user '{}' (moodleId={})", username, moodleId);
+                }
+            } catch (Exception e) {
+                String msg = username + ": " + e.getMessage();
+                errors.add(msg);
+                log.warn("[MoodleSync] Failed to import Moodle user '{}': {}", username, e.getMessage());
             }
         }
-        return count;
+
+        var result = new java.util.LinkedHashMap<String, Object>();
+        result.put("imported", imported);
+        result.put("linked", linked);
+        if (!errors.isEmpty()) {
+            result.put("errors", errors);
+        }
+        return result;
     }
 
     /* ─────────── Sync FROM Moodle ─────────────────────────── */

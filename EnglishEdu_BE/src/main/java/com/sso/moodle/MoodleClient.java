@@ -159,6 +159,19 @@ public class MoodleClient {
     }
 
     /**
+     * Get ALL users from Moodle using core_user_get_users.
+     * Returns a JSON array of user objects.
+     */
+    public JsonNode getAllUsers() {
+        Map<String, String> params = new LinkedHashMap<>();
+        // Search for all users with email containing '@' (i.e. all users with an email)
+        params.put("criteria[0][key]", "email");
+        params.put("criteria[0][value]", "%");
+        JsonNode result = call("core_user_get_users", params);
+        return result.path("users");
+    }
+
+    /**
      * Create a course on Moodle. Returns the moodle course id.
      */
     public long createCourse(String fullname, String shortname, String categoryId,

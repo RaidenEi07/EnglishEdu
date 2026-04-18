@@ -5,6 +5,31 @@
 
 ---
 
+## [Unreleased] — Fix Moodle User Sync Deadlock (2026-04-17)
+
+### Bugs Fixed
+
+#### `MoodleSyncService.java` — Deadlock khi tạo user
+- **Fix HIGH:** `ensureMoodleUser()` dùng `@Transactional(REQUIRES_NEW)` và gọi `userRepository.save(user)`.
+  Khi được gọi từ `createUser()` hoặc `register()` (đang giữ write-lock trên row user chưa commit) → **deadlock/timeout**, exception bị catch silent → user được tạo nhưng **không bao giờ đồng bộ lên Moodle**.
+- **Fix:** Tách ra method `provisionMoodleUser(user)` — không có `@Transactional`, chỉ gọi Moodle API + set field trên entity, **không tự save**. Caller chịu trách nhiệm save trong transaction của mình.
+- `ensureMoodleUser()` giữ nguyên cho các caller khác (SSO, enrolment) nhưng chuyển thành wrapper gọi `provisionMoodleUser()` rồi save.
+
+#### `UserService.createUser()` — Không sync Moodle
+- **Fix HIGH:** Chuyển từ `ensureMoodleUser(saved)` → `provisionMoodleUser(saved)` + `userRepository.save(saved)` trong cùng transaction. Log rõ moodleId sau khi sync thành công.
+
+#### `AuthService.register()` — Không sync Moodle
+- **Fix HIGH:** Tương tự `createUser()` — chuyển sang `provisionMoodleUser()` để tránh deadlock.
+
+#### `MoodleSyncService.syncAllUsers()` — Đếm sai, không save
+- **Fix MEDIUM:** Chuyển từ `ensureMoodleUser(u)` → `provisionMoodleUser(u)` + `userRepository.save(u)` để tránh nested `REQUIRES_NEW` trong `@Transactional` ngoài. Thêm log rõ moodleId sau từng sync.
+
+### Frontend — `pages/admin/users/users.ts`
+- **Thêm:** Icon Moodle sync status trong bảng users — 🔗 (đã sync, hiện moodleId khi hover) / ⚠ (chưa sync)
+- **Thêm:** Toast khi tạo user mới hiển thị Moodle ID nếu sync thành công hoặc cảnh báo nếu thất bại
+
+---
+
 ## [Unreleased] — Code Quality & Test Coverage (2026-04-13)
 
 ### Bảo mật

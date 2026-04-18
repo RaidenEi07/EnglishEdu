@@ -628,13 +628,45 @@ function initApp(): void {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang đồng bộ...';
     try {
-      const res = await apiPost<{ synced: number }>('/admin/moodle/sync-users', {});
-      toast.success(`Đã đồng bộ ${res.synced} người dùng mới lên Moodle.`);
-    } catch {
-      toast.error('Đồng bộ người dùng thất bại.');
+      const res = await apiPost<{ synced: number; skipped?: number; total?: number; errors?: string[] }>('/admin/moodle/sync-users', {});
+      let msg = `Đã đồng bộ ${res.synced} người dùng mới lên Moodle.`;
+      if (res.total) msg += ` (Tổng: ${res.total}, đã có: ${res.skipped ?? 0})`;
+      if (res.errors && res.errors.length > 0) {
+        msg += `\nLỗi (${res.errors.length}): ${res.errors.slice(0, 3).join('; ')}`;
+        toast.warning(msg);
+      } else {
+        toast.success(msg);
+      }
+    } catch (e: unknown) {
+      toast.error('Đồng bộ người dùng thất bại: ' + (e instanceof Error ? e.message : String(e)));
     }
     btn.disabled = false;
     btn.innerHTML = '<i class="fa fa-users me-1"></i>Đồng bộ người dùng → Moodle';
+  });
+
+  document.getElementById('moodleImportUsersBtn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('moodleImportUsersBtn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang nhập...';
+    try {
+      const res = await apiPost<{ imported: number; linked?: number; errors?: string[]; error?: string }>('/admin/moodle/import-users', {});
+      if (res.error) {
+        toast.error('Lỗi: ' + res.error);
+      } else {
+        let msg = `Đã nhập ${res.imported} người dùng mới từ Moodle.`;
+        if (res.linked) msg += ` Liên kết: ${res.linked}.`;
+        if (res.errors && res.errors.length > 0) {
+          msg += ` Lỗi (${res.errors.length}): ${res.errors.slice(0, 3).join('; ')}`;
+          toast.warning(msg);
+        } else {
+          toast.success(msg);
+        }
+      }
+    } catch (e: unknown) {
+      toast.error('Nhập người dùng thất bại: ' + (e instanceof Error ? e.message : String(e)));
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-download me-1"></i>Nhập người dùng ← Moodle';
   });
 
   // ── Load dashboard stats immediately ─────────────────────────

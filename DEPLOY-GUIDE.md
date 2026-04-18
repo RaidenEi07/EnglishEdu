@@ -221,7 +221,9 @@ Sau khi Moodle chạy ổn, cần thiết lập thủ công:
    - Thêm **từng** function sau (Moodle không hỗ trợ wildcard `*` khi add):
      - `auth_userkey_request_login_url`
      - `core_user_create_users`
+     - `core_user_get_users`
      - `core_user_get_users_by_field`
+     - `core_user_update_users`
      - `core_course_create_courses`
      - `core_course_get_courses`
      - `core_course_get_courses_by_field`
@@ -290,6 +292,69 @@ ufw status
 
 ---
 
+## Cập nhật code sau này (Khởi động lại sau khi pull)
+
+> Thực hiện trên **server** (SSH vào trước).
+
+### Trường hợp thường — chỉ thay đổi backend hoặc frontend
+
+```bash
+cd ~/EnglishEdu
+
+# 1. Lấy code mới
+git pull
+
+# 2. Rebuild frontend (nếu có thay đổi trong sunshine-rebuild/)
+cd sunshine-rebuild && npm run build && cd ..
+
+# 3. Restart backend (không mất data, tự rebuild JAR)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build backend
+
+# 4. Kiểm tra backend đã lên
+docker compose -f docker-compose.prod.yml logs -f backend
+# Chờ thấy: "Started ... in X seconds" → Ctrl+C
+```
+
+### Trường hợp thay đổi cả Nginx hoặc cấu hình Docker
+
+```bash
+cd ~/EnglishEdu
+git pull
+cd sunshine-rebuild && npm run build && cd ..
+
+# Rebuild + restart tất cả services (không xóa data)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+# Theo dõi
+docker compose -f docker-compose.prod.yml ps
+# Tất cả STATUS phải "Up"
+```
+
+### Trường hợp chỉ restart nhanh (không thay đổi code)
+
+```bash
+cd ~/EnglishEdu
+
+# Restart backend
+docker compose -f docker-compose.prod.yml restart backend
+
+# Hoặc restart tất cả
+docker compose -f docker-compose.prod.yml restart
+```
+
+### Kiểm tra sau khi restart
+
+```bash
+# Backend health
+curl http://localhost:4000/actuator/health
+# → {"status":"UP"}
+
+# Xem log nếu có lỗi
+docker compose -f docker-compose.prod.yml logs --tail=50 backend
+```
+
+---
+
 ## Xóa sạch và build lại từ đầu (Fresh DB)
 
 Nếu muốn reset hoàn toàn (bao gồm Moodle DB mới):
@@ -305,26 +370,6 @@ docker compose -f docker-compose.prod.yml down -v --remove-orphans
 
 > ⚠️ `down -v` xóa sạch volume → Moodle sẽ init DB mới từ đầu theo env vars.
 > Sau đó vào BƯỚC 5 để verify `wwwroot` và cấu hình Web Services thủ công.
-
----
-
-## Cập nhật code sau này
-
-```bash
-cd ~/EnglishEdu
-git pull
-
-# Rebuild frontend
-cd sunshine-rebuild && npm run build && cd ..
-
-# Restart backend (không mất data)
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build backend
-
-# Nếu cần restart tất cả
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-```
-
----
 
 ## Khi có domain — chuyển sang HTTPS
 

@@ -58,8 +58,18 @@ public class MoodleController {
 
     @PostMapping("/admin/moodle/sync-users")
     public ResponseEntity<ApiResponse<Map<String, Object>>> syncAllUsers() {
-        int count = moodleSyncService.syncAllUsers();
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("synced", count)));
+        Map<String, Object> result = moodleSyncService.syncAllUsersDetailed();
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /**
+     * Import users FROM Moodle into EnglishEdu.
+     * Existing users (by username/email) are linked; new ones are created locally.
+     */
+    @PostMapping("/admin/moodle/import-users")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> importUsersFromMoodle() {
+        Map<String, Object> result = moodleSyncService.importUsersFromMoodle();
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
     /**

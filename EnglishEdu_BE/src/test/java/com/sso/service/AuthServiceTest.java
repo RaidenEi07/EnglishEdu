@@ -129,7 +129,7 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(saved);
         when(tokenProvider.generateToken(2L, "bob")).thenReturn("jwt-bob");
         when(userMapper.toResponse(saved)).thenReturn(buildResponse(saved));
-        doThrow(new RuntimeException("Moodle is down")).when(moodleSyncService).ensureMoodleUser(saved);
+        doThrow(new RuntimeException("Moodle is down")).when(moodleSyncService).provisionMoodleUser(saved);
 
         RegisterRequest req = new RegisterRequest();
         req.setUsername("bob");
