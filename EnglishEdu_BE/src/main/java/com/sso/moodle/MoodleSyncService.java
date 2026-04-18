@@ -61,6 +61,12 @@ public class MoodleSyncService {
                 moodleProperties.getToken() != null && !moodleProperties.getToken().isBlank());
 
         JsonNode existing = moodleClient.getUserByUsername(user.getUsername());
+        if (existing == null && user.getEmail() != null && !user.getEmail().isBlank()) {
+            existing = moodleClient.getUserByEmail(user.getEmail());
+            if (existing != null) {
+                log.info("[MoodleSync] User '{}' not found by username but found by email on Moodle", user.getUsername());
+            }
+        }
         long moodleId;
         if (existing != null) {
             moodleId = existing.path("id").asLong();
