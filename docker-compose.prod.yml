@@ -54,7 +54,7 @@ services:
       MOODLE_PUBLIC_URL: http://${LMS_DOMAIN}:8080
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_SSO_SECRET: ${MOODLE_SSO_SECRET}
-      MOODLE_SERVICE_NAME: englishedu_backend
+      MOODLE_SERVICE_NAME: ${MOODLE_SERVICE_NAME:-Sunshine_BE}
       # Auth
       JWT_SECRET: ${JWT_SECRET}
       # App
