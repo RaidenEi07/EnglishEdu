@@ -598,6 +598,7 @@ public class MoodleSyncService {
             Course course = Course.builder()
                     .name(fullname)
                     .description(mc.path("summary").asText(""))
+                    .category(mc.path("categoryname").asText("Moodle"))
                     .moodleCourseId(moodleCourseId)
                     .published(true)
                     .free(true)
@@ -647,6 +648,7 @@ public class MoodleSyncService {
                         course = Course.builder()
                                 .name(fullname)
                                 .description(mc.path("summary").asText(""))
+                                .category(mc.path("categoryname").asText("Moodle"))
                                 .moodleCourseId(moodleCourseId)
                                 .published(true)
                                 .free(true)
@@ -673,6 +675,50 @@ public class MoodleSyncService {
             }
         }
         return count;
+    }
+
+    /**
+     * Sync Moodle enrollments for a single student into the local DB.
+     * Uses REQUIRES_NEW so any DB error (e.g. constraint violation) rolls back only
+     * this inner transaction and does NOT corrupt the caller's Hibernate session.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void syncLocalEnrollments(User user) {
+        com.fasterxml.jackson.databind.JsonNode moodleCourses = getMoodleCourses(user);
+        if (moodleCourses == null || !moodleCourses.isArray()) return;
+        for (com.fasterxml.jackson.databind.JsonNode mc : moodleCourses) {
+            long moodleCourseId = mc.path("id").asLong();
+            if (moodleCourseId <= 1) continue; // skip id=0 (error) and id=1 (Moodle "Site" course)
+
+            Course course = courseRepository.findByMoodleCourseId(moodleCourseId).orElse(null);
+            if (course == null) {
+                String fullname = mc.path("fullname").asText("").trim();
+                if (fullname.isEmpty()) continue;
+                course = Course.builder()
+                        .name(fullname)
+                        .description(mc.path("summary").asText(""))
+                        .category(mc.path("categoryname").asText("Moodle"))
+                        .moodleCourseId(moodleCourseId)
+                        .published(true)
+                        .free(true)
+                        .build();
+                course = courseRepository.save(course);
+                log.info("Auto-imported Moodle course for user {}: id={} name='{}'",
+                        user.getUsername(), moodleCourseId, fullname);
+            }
+
+            if (!enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId())) {
+                com.sso.entity.Enrollment e = com.sso.entity.Enrollment.builder()
+                        .user(user)
+                        .course(course)
+                        .status("active")
+                        .requestDate(java.time.Instant.now())
+                        .approvedAt(java.time.Instant.now())
+                        .build();
+                enrollmentRepository.save(e);
+                log.info("Auto-synced Moodle enrollment: user={} course={}", user.getUsername(), course.getName());
+            }
+        }
     }
 
     /* ─────────── Connection test ───────────────────────────── */

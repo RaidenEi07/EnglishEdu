@@ -107,7 +107,7 @@ class EnrollmentServiceTest {
         EnrolledCourseResponse expected = buildEnrolledResponse(enrollment);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
-        when(moodleSyncService.getMoodleCourses(student)).thenReturn(objectMapper.createArrayNode());
+        doNothing().when(moodleSyncService).syncLocalEnrollments(student);
         when(enrollmentRepository.findByUserIdOrderByLastAccessedDesc(1L))
                 .thenReturn(List.of(enrollment));
         when(courseMapper.toEnrolledResponse(enrollment)).thenReturn(expected);
@@ -116,6 +116,7 @@ class EnrollmentServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCourseId()).isEqualTo(10L);
+        verify(moodleSyncService).syncLocalEnrollments(student);
     }
 
     @Test
@@ -127,8 +128,8 @@ class EnrollmentServiceTest {
         EnrolledCourseResponse expected = buildEnrolledResponse(enrollment);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
-        when(moodleSyncService.getMoodleCourses(student))
-                .thenThrow(new MoodleApiException("Moodle connection failed"));
+        doThrow(new MoodleApiException("Moodle connection failed"))
+                .when(moodleSyncService).syncLocalEnrollments(student);
         when(enrollmentRepository.findByUserIdOrderByLastAccessedDesc(1L))
                 .thenReturn(List.of(enrollment));
         when(courseMapper.toEnrolledResponse(enrollment)).thenReturn(expected);
@@ -172,7 +173,7 @@ class EnrollmentServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(student));
         doAnswer(inv -> { student.setMoodleId(42L); return 42L; })
                 .when(moodleSyncService).ensureMoodleUser(student);
-        when(moodleSyncService.getMoodleCourses(any())).thenReturn(objectMapper.createArrayNode());
+        doNothing().when(moodleSyncService).syncLocalEnrollments(any());
         when(enrollmentRepository.findByUserIdOrderByLastAccessedDesc(1L))
                 .thenReturn(Collections.emptyList());
 
@@ -180,7 +181,7 @@ class EnrollmentServiceTest {
 
         assertThat(result).isEmpty();
         verify(moodleSyncService).ensureMoodleUser(student);
-        verify(moodleSyncService).getMoodleCourses(any());
+        verify(moodleSyncService).syncLocalEnrollments(any());
     }
 
     /* ─── enroll ──────────────────────────────────────────── */

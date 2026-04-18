@@ -72,61 +72,16 @@ public class EnrollmentService {
                 }
             }
             if (user.getMoodleId() != null) {
-                syncMoodleEnrollmentsToLocal(user);
+                try {
+                    moodleSyncService.syncLocalEnrollments(user);
+                } catch (Exception e) {
+                    log.warn("Moodle enrollment sync failed for user {}: {}", user.getUsername(), e.getMessage());
+                }
             }
         }
         return enrollmentRepository.findByUserIdOrderByLastAccessedDesc(userId).stream()
                 .map(courseMapper::toEnrolledResponse)
                 .toList();
-    }
-
-    /**
-     * Queries Moodle for the student's enrolled courses and auto-creates local
-     * enrollment records for any that are missing in the EnglishEdu database.
-     * This handles the case where an admin manually enrolled a student directly in Moodle.
-     */
-    private void syncMoodleEnrollmentsToLocal(User user) {
-        try {
-            com.fasterxml.jackson.databind.JsonNode moodleCourses = moodleSyncService.getMoodleCourses(user);
-            if (moodleCourses == null || !moodleCourses.isArray()) return;
-            for (com.fasterxml.jackson.databind.JsonNode mc : moodleCourses) {
-                long moodleCourseId = mc.path("id").asLong();
-                if (moodleCourseId == 0) continue;
-                // Skip Moodle's built-in "Site" course (id=1)
-                if (moodleCourseId == 1) continue;
-
-                Course course = courseRepository.findByMoodleCourseId(moodleCourseId).orElse(null);
-
-                // Auto-import course from Moodle if it doesn't exist locally
-                if (course == null) {
-                    String fullname = mc.path("fullname").asText("").trim();
-                    if (fullname.isEmpty()) continue;
-                    course = Course.builder()
-                            .name(fullname)
-                            .description(mc.path("summary").asText(""))
-                            .moodleCourseId(moodleCourseId)
-                            .published(true)
-                            .free(true)
-                            .build();
-                    course = courseRepository.save(course);
-                    log.info("Auto-imported Moodle course: id={} name='{}'", moodleCourseId, fullname);
-                }
-
-                if (!enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId())) {
-                    Enrollment e = Enrollment.builder()
-                            .user(user)
-                            .course(course)
-                            .status("active")
-                            .requestDate(Instant.now())
-                            .approvedAt(Instant.now())
-                            .build();
-                    enrollmentRepository.save(e);
-                    log.info("Auto-synced Moodle enrollment: user={} course={}", user.getUsername(), course.getName());
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Moodle enrollment sync failed for user {}: {}", user.getUsername(), e.getMessage());
-        }
     }
 
     /**
