@@ -215,7 +215,8 @@ Sau khi Moodle chạy ổn, cần thiết lập thủ công:
 
 **B. Enable Web Services (để backend gọi Moodle API):**
 1. **Site Administration → Advanced features** → bật **Enable web services** → Save
-2. **Site Administration → Plugins → Web services → Manage protocols** → bật **REST protocol**
+2. **Site Administration → Plugins → Web services → Manage protocols** → bật **REST protocol** → Save  
+   ⚠️ **Nếu bỏ qua bước này, Moodle trả về empty response → sync-users sẽ fail**
 3. **Site Administration → Plugins → Web services → External services** → thêm service mới:
    - Name: `englishedu_backend` | Enable: ✓ | Authorised users only: ✓
    - Thêm **từng** function sau (Moodle không hỗ trợ wildcard `*` khi add):
