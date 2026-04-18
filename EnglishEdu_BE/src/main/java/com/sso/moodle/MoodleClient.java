@@ -93,19 +93,9 @@ public class MoodleClient {
         log.info("Moodle API → POST func={} params={}", wsFunction, params.keySet());
 
         try {
-            // Build MOODLE_URL for the request, but also read the configured publicUrl
-            // so we can send the correct Host header. This prevents Moodle from redirecting
-            // when wwwroot uses a public IP but MOODLE_URL uses the internal Docker hostname.
-            String publicUrl = props.getPublicUrl();
-            if (publicUrl == null || publicUrl.isBlank()) publicUrl = baseUrl;
-            URI publicUri = URI.create(publicUrl);
-            String hostHeader = publicUri.getHost()
-                    + (publicUri.getPort() > 0 ? ":" + publicUri.getPort() : "");
-
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(endpoint))
                     .header("Content-Type", "application/x-www-form-urlencoded")
-                    .header("Host", hostHeader)
                     .timeout(Duration.ofSeconds(30))
                     .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
                     .build();
@@ -121,21 +111,19 @@ public class MoodleClient {
             // Detect redirects (301/302) — usually means wwwroot mismatch
             if (statusCode == 301 || statusCode == 302 || statusCode == 303 || statusCode == 307) {
                 String location = httpResponse.headers().firstValue("Location").orElse("?");
-                log.error("Moodle redirected func={} status={} Location={}. " +
-                        "MOODLE_URL={} but Moodle wwwroot may differ. " +
-                        "Check MOODLE_PUBLIC_URL matches Moodle wwwroot.", wsFunction, statusCode, location, baseUrl);
+                log.error("Moodle redirected func={} status={} Location={}. MOODLE_URL={}", wsFunction, statusCode, location, baseUrl);
                 throw new MoodleApiException("Moodle redirected to " + location
                         + " — MOODLE_PUBLIC_URL must match Moodle wwwroot setting.");
             }
 
             // Detect HTML response (Moodle returning error page instead of JSON)
             if (responseBody != null && responseBody.trim().startsWith("<")) {
-                log.error("Moodle returned HTML instead of JSON for func={}, status={}, body_prefix={}",
+                log.error("Moodle returned HTML for func={} status={} preview={}",
                         wsFunction, statusCode,
                         responseBody.substring(0, Math.min(500, responseBody.length())));
                 throw new MoodleApiException("Moodle returned HTML (not JSON) for " + wsFunction
-                        + ". Token may be invalid, or REST protocol not enabled. "
-                        + "Check backend logs for the HTML content.");
+                        + ". Token may be invalid/empty, or 'Enable web services' not turned on. "
+                        + "Check backend logs for HTML content.");
             }
 
             if (responseBody == null || responseBody.isBlank()) {
