@@ -1,7 +1,7 @@
 # TROUBLESHOOT — EnglishEdu Server Issues Log
 
 > Ghi lại tất cả lỗi gặp phải trong quá trình deploy lên server Ubuntu 22.04  
-> IP server: `14.225.217.172` | Stack: Nginx + Spring Boot 4 + Bitnami Moodle 5 + PostgreSQL + MariaDB + Redis + MinIO
+> IP server: `221.132.21.13` | Stack: Nginx + Spring Boot 4 + Bitnami Moodle 5 + PostgreSQL + MariaDB + Redis + MinIO
 
 ---
 
@@ -63,7 +63,7 @@ healthcheck:
 ### ERR-06 — Moodle hiển thị "New Site" (DB trống)
 | | |
 |---|---|
-| **Triệu chứng** | Vào `http://14.225.217.172:8080` thấy Moodle fresh install wizard |
+| **Triệu chứng** | Vào `http://221.132.21.13:8080` thấy Moodle fresh install wizard |
 | **Nguyên nhân** | `docker-entrypoint-initdb.d` không chạy với Bitnami MariaDB image |
 | **Fix** | Import DB thủ công: |
 ```bash
@@ -89,7 +89,7 @@ docker exec -i englishedu-mariadb-1 mariadb -u bn_moodle -pbn_pass bitnami_moodl
 | **Fix** | Patch `config.php` theo cách copy-out/edit/copy-in (KHÔNG restart container): |
 ```bash
 docker cp englishedu-moodle-1:/bitnami/moodle/config.php ./config.php
-sed -i "s|http://127.0.0.1:8080|http://14.225.217.172:8080|g" config.php
+sed -i "s|http://127.0.0.1:8080|http://221.132.21.13:8080|g" config.php
 docker cp ./config.php englishedu-moodle-1:/bitnami/moodle/config.php
 ```
 > ⚠️ **KHÔNG restart Moodle container** — Bitnami ghi đè `config.php` khi restart
@@ -127,7 +127,7 @@ management.endpoint.health.show-details=always
 | | |
 |---|---|
 | **Triệu chứng** | `sync-users` trả về `0`; log backend: `Moodle returned HTML instead of JSON` |
-| **Nguyên nhân gốc (ROOT CAUSE)** | `MOODLE_URL=http://moodle:8080` (Docker internal hostname) không khớp với `wwwroot=http://14.225.217.172:8080`. Moodle **redirect tất cả request** có hostname không khớp wwwroot |
+| **Nguyên nhân gốc (ROOT CAUSE)** | `MOODLE_URL=http://moodle:8080` (Docker internal hostname) không khớp với `wwwroot=http://221.132.21.13:8080`. Moodle **redirect tất cả request** có hostname không khớp wwwroot |
 | **Fix** | Đổi trong `docker-compose.prod.yml`: |
 ```yaml
 MOODLE_URL: http://${LMS_DOMAIN}:8080
@@ -195,7 +195,7 @@ docker exec englishedu-moodle-1 chmod -R 775 /bitnami/moodledata
 
 ---
 
-### ERR-18 — Không đăng nhập được vào Moodle (http://14.225.217.172:8080/login)
+### ERR-18 — Không đăng nhập được vào Moodle (http://221.132.21.13:8080/login)
 | | |
 |---|---|
 | **Triệu chứng** | Nhập `admin / Admin@123` nhưng không vào được |
@@ -212,7 +212,7 @@ docker exec englishedu-moodle-1 chmod -R 775 /bitnami/moodledata
 | **Fix** |
 | | 1. Đổi `RestClient` sang lazy-init (chỉ tạo khi cần, không tạo trong constructor) |
 | | 2. Đổi `MoodleProperties` annotation từ `@Configuration` → `@Component` |
-| | 3. Đảm bảo `.env.prod` trên server có `LMS_DOMAIN=14.225.217.172` |
+| | 3. Đảm bảo `.env.prod` trên server có `LMS_DOMAIN=221.132.21.13` |
 | **File sửa** | `MoodleClient.java`, `MoodleProperties.java` |
 
 ---
@@ -382,6 +382,34 @@ docker exec englishedu-moodle-1 chmod -R 775 /bitnami/moodledata
 
 ---
 
+### ERR-35 — Moodle API `invalidtoken` do POST body bị mất khi redirect
+| | |
+|---|---|
+| **Triệu chứng** | Mọi Moodle API call (sync-users, enroll, get courses) trả về `invalidtoken` hoặc `accessexception` |
+| **Nguyên nhân gốc** | Backend POST tới `http://moodle:8080` → Moodle redirect (303) tới `http://221.132.21.13:8080` (do wwwroot ≠ hostname). `HttpClient.Redirect.NORMAL` chuyển POST thành GET (RFC 7231) → body chứa `wstoken` bị mất → Moodle trả `invalidtoken` |
+| **Fix** | Đổi `followRedirects(NORMAL)` → `followRedirects(NEVER)`. Thêm manual re-POST đến `Location` URL với cùng body gốc |
+| **File sửa** | `MoodleClient.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
+### ERR-36 — Student login thành công nhưng ngay lập tức lỗi 500 trên `/courses/enrolled`
+| | |
+|---|---|
+| **Triệu chứng** | Student đăng nhập → frontend gọi `GET /api/v1/courses/enrolled` → 500 Internal Server Error |
+| **Nguyên nhân gốc** | 3 nguyên nhân cộng dồn: |
+| | 1. `SecurityConfig`: `permitAll()` cho `/courses/{id}` vô tình match cả `/courses/enrolled` → request đi vào endpoint mà không cần auth |
+| | 2. `@AuthenticationPrincipal UserDetails user` = null → `getUserId(null)` → NPE |
+| | 3. `MoodleSyncService.provisionMoodleUser()`: retry lookup trong catch block throw uncaught exception |
+| **Fix** | |
+| | 1. SecurityConfig: Thêm explicit `.authenticated()` cho `/courses/enrolled`, `/courses/assigned`, `/courses/recent`, `/courses/dashboard` trước `{id}`. Đổi `{id}` → `{id:\\d+}` |
+| | 2. Controller: Thêm null check trong `getUserId()` → throw `BadRequestException` |
+| | 3. MoodleSyncService: Wrap retry lookup trong try/catch riêng |
+| **File sửa** | `SecurityConfig.java`, `CourseController.java`, `UserController.java`, `MoodleSyncService.java` |
+| **Trạng thái** | ✅ Đã fix |
+
+---
+
 ## Debug ERR-18 — Không đăng nhập được Moodle
 
 ### Bước 1: Kiểm tra wwwroot trong config.php
@@ -392,15 +420,15 @@ docker exec englishedu-moodle-1 grep "wwwroot" /bitnami/moodle/config.php
 
 Kết quả phải là:
 ```
-$CFG->wwwroot   = 'http://14.225.217.172:8080';
+$CFG->wwwroot   = 'http://221.132.21.13:8080';
 ```
 
 Nếu SAI (ví dụ còn `http://moodle:8080` hoặc IP cũ) → patch lại:
 ```bash
 docker cp englishedu-moodle-1:/bitnami/moodle/config.php ./config.php
-sed -i "s|http://moodle:8080|http://14.225.217.172:8080|g" config.php
-sed -i "s|http://127.0.0.1:8080|http://14.225.217.172:8080|g" config.php
-sed -i "s|http://14.225.192.133:8080|http://14.225.217.172:8080|g" config.php
+sed -i "s|http://moodle:8080|http://221.132.21.13:8080|g" config.php
+sed -i "s|http://127.0.0.1:8080|http://221.132.21.13:8080|g" config.php
+sed -i "s|http://221.132.21.13:8080|http://221.132.21.13:8080|g" config.php
 docker cp ./config.php englishedu-moodle-1:/bitnami/moodle/config.php
 ```
 

@@ -77,6 +77,9 @@ public class CourseController {
     }
 
     private Long getUserId(UserDetails user) {
+        if (user == null) {
+            throw new com.sso.exception.BadRequestException("Authentication required");
+        }
         return Long.parseLong(user.getUsername());
     }
 }

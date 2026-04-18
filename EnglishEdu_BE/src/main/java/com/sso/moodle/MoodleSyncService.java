@@ -109,9 +109,15 @@ public class MoodleSyncService {
                 // Try one more lookup before giving up.
                 log.warn("[MoodleSync] createUser failed for '{}': {}. Retrying lookup…",
                         user.getUsername(), e.getMessage());
-                JsonNode retryLookup = moodleClient.getUserByUsername(user.getUsername());
-                if (retryLookup == null && user.getEmail() != null) {
-                    retryLookup = moodleClient.getUserByEmail(user.getEmail());
+                JsonNode retryLookup = null;
+                try {
+                    retryLookup = moodleClient.getUserByUsername(user.getUsername());
+                    if (retryLookup == null && user.getEmail() != null) {
+                        retryLookup = moodleClient.getUserByEmail(user.getEmail());
+                    }
+                } catch (Exception retryEx) {
+                    log.warn("[MoodleSync] Retry lookup also failed for '{}': {}",
+                            user.getUsername(), retryEx.getMessage());
                 }
                 if (retryLookup != null && retryLookup.path("id").asLong() > 0) {
                     moodleId = retryLookup.path("id").asLong();

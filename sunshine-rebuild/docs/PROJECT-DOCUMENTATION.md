@@ -1,5 +1,13 @@
 # Tài liệu dự án EnglishEdu
 
+> ⚠️ **Lưu ý:** File này là bản tổng hợp lịch sử. Các nguồn tài liệu chính thức:
+> - **Backend kiến trúc:** [BACKEND.md](BACKEND.md) ← nguồn chính, cập nhật nhất
+> - **Frontend:** [FRONTEND.md](FRONTEND.md)
+> - **Moodle setup:** [MOODLE-SETUP.md](MOODLE-SETUP.md)
+> - **Deploy:** [../../DEPLOY-GUIDE.md](../../DEPLOY-GUIDE.md)
+> - **Changelog:** [../../CHANGELOG.md](../../CHANGELOG.md)
+> - **Troubleshoot:** [../../TROUBLESHOOT.md](../../TROUBLESHOOT.md)
+
 ## Mục lục
 
 1. [Tổng quan kiến trúc](#1-tổng-quan-kiến-trúc)

@@ -461,8 +461,26 @@ com.sso/
 |---|---|---|
 | `JwtTokenProviderTest` | 10 | generate, validate, getUserId, tampered token |
 | `CategoryServiceTest` | 16 | CRUD categories + levels |
-| `UserServiceTest` | 13 | getProfile, updateProfile, changePassword, createUser, toggleActive |
-| `AuthServiceTest` | 9 | register, login, guestLogin, forgotPassword |
+| `UserServiceTest` | 14 | getProfile, updateProfile, changePassword, createUser, toggleActive |
+| `AuthServiceTest` | 10 | register, login, guestLogin, forgotPassword |
 | `PaymentServiceTest` | 9 | initiatePayment, handlePaymentCallback (idempotency, FAILED, COMPLETED) |
 | `ReviewServiceTest` | 8 | createReview (gates), updateReview, deleteReview |
-| **Tổng** | **65** | |
+| `EnrollmentServiceTest` | 17 | getEnrolledCourses (student/admin/moodle fail), enroll (free/duplicate/guest), updateEnrollment, dashboard, admin approve/revoke/directEnroll |
+| **Tổng** | **84** | |
+
+---
+
+## 17. Known Issues & Critical Fixes (2026-04-19)
+
+### SecurityConfig — Path Matching Bug (ERR-36)
+- `requestMatchers("/api/v1/courses/{id}").permitAll()` vô tình match cả `/courses/enrolled`, `/courses/assigned`... → student gặp 500 ngay sau login.
+- **Fix:** Thêm explicit `.authenticated()` cho các endpoint cụ thể trước `{id}`. Đổi `{id}` thành `{id:\\d+}`.
+
+### MoodleClient — POST Body Lost on Redirect (ERR-35)
+- Khi Moodle redirect (303) từ Docker hostname sang public IP, `HttpClient.Redirect.NORMAL` chuyển POST→GET → body chứa `wstoken` bị mất.
+- **Fix:** `followRedirects(NEVER)` + manual re-POST đến Location URL.
+
+### PaymentRateLimitService — Redis-backed Rate Limiting
+- Max 10 requests / 60 giây per IP cho payment endpoints.
+- Trả 429 Too Many Requests khi vượt ngưỡng.
+- Dùng Redis INCR + EXPIRE.

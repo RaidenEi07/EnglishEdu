@@ -1,6 +1,6 @@
 # Hướng dẫn Deploy EnglishEdu lên Server
 
-> **Server:** Ubuntu 22.04 · IP: `14.225.217.172` · Chưa có domain · HTTP only
+> **Server:** Ubuntu 22.04 · IP: `221.132.21.13` · Chưa có domain · HTTP only
 
 ---
 
@@ -52,7 +52,7 @@ git push
 ## BƯỚC 1 — Cài đặt server (chạy 1 lần)
 
 ```bash
-ssh root@14.225.192.133
+ssh root@221.132.21.13
 
 # Cập nhật OS
 apt update && apt upgrade -y
@@ -106,8 +106,8 @@ nano .env.prod
 Nội dung `.env.prod` (thay `MOODLE_SSO_SECRET` bằng kết quả openssl):
 
 ```env
-DOMAIN=14.225.192.133
-LMS_DOMAIN=14.225.192.133
+DOMAIN=221.132.21.13
+LMS_DOMAIN=221.132.21.13
 DB_PASSWORD=Admin@123
 DB_NAME=sunshine_db
 ADMIN_USERNAME=admin
@@ -244,7 +244,7 @@ Sau khi Moodle chạy ổn, cần thiết lập thủ công:
 
 ## BƯỚC 6 — Lấy Moodle Token
 
-1. Mở `http://14.225.192.133:8080`
+1. Mở `http://221.132.21.13:8080`
 2. Đăng nhập: `admin` / `Admin@123`
 3. Vào: **Site Administration → Server → Web services → Manage tokens**
 4. Copy token
@@ -269,14 +269,14 @@ curl http://localhost:4000/actuator/health
 # → {"status":"UP"}
 
 # Frontend
-curl -I http://14.225.192.133
+curl -I http://221.132.21.13
 # → HTTP/1.1 200 OK
 ```
 
 Truy cập trình duyệt:
-- **Website:** http://14.225.192.133
-- **Moodle:** http://14.225.192.133:8080
-- **MinIO Console:** http://14.225.192.133:9001
+- **Website:** http://221.132.21.13
+- **Moodle:** http://221.132.21.13:8080
+- **MinIO Console:** http://221.132.21.13:9001
 
 ---
 
@@ -374,7 +374,7 @@ docker compose -f docker-compose.prod.yml down -v --remove-orphans
 
 ## Khi có domain — chuyển sang HTTPS
 
-1. Trỏ DNS: `sunshineschool.edu.vn` + `lms.sunshineschool.edu.vn` → `14.225.192.133`
+1. Trỏ DNS: `sunshineschool.edu.vn` + `lms.sunshineschool.edu.vn` → `221.132.21.13`
 2. Lấy cert: `certbot certonly --standalone -d sunshineschool.edu.vn -d lms.sunshineschool.edu.vn`
 3. Copy cert: `mkdir nginx/ssl && ln -s /etc/letsencrypt/live/.../fullchain.pem nginx/ssl/cert.pem && ln -s .../privkey.pem nginx/ssl/key.pem`
 4. Thay `nginx/nginx.conf` bằng `nginx/nginx.conf.ssl-ready`

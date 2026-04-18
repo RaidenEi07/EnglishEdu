@@ -43,7 +43,16 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/courses", "/api/v1/courses/{id}").permitAll()
+                // Authenticated course sub-paths MUST come BEFORE the /courses/{id} permitAll
+                // because {id} matches any segment including "enrolled", "assigned", "dashboard", etc.
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/courses/enrolled",
+                        "/api/v1/courses/assigned",
+                        "/api/v1/courses/recent",
+                        "/api/v1/courses/dashboard").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/enroll").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/courses/*/enrollment").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/courses", "/api/v1/courses/{id:\\d+}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/{id}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/levels", "/api/v1/levels/{id}").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/courses/{courseId}/reviews").permitAll()

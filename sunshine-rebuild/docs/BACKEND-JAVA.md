@@ -1,3 +1,9 @@
+# ⚠️ ARCHIVED — Kế hoạch Backend Java (Lịch sử)
+
+> **Đây là tài liệu kế hoạch ban đầu (2026-03-16). Đã được thay thế bởi [BACKEND.md](BACKEND.md) — xem file đó cho kiến trúc hiện tại.**
+>
+> Lưu ý: File này ghi Java 21 / Spring Boot 3.3.x nhưng dự án thực tế dùng **Java 17 / Spring Boot 4.0.3**.
+
 # Kế hoạch Backend Java – Sunshine School Online (SSO)
 
 > Phân tích từ frontend Vite + 10 API endpoints đang được gọi + 24 courses + Moodle LMS logic  

@@ -1,7 +1,59 @@
 # CHANGELOG — EnglishEdu
 
 > Theo dõi tất cả thay đổi code + server kể từ khi deploy  
-> IP server: `14.225.217.172` · Moodle: `http://14.225.217.172:8080`
+> IP server: `221.132.21.13` · Moodle: `http://221.132.21.13:8080`
+
+---
+
+## [Unreleased] — Fix Moodle HTTP Redirect & Student 500 Error (2026-04-19)
+
+### Bugs Fixed
+
+#### `MoodleClient.java` — POST body bị mất khi Moodle redirect (HTTP 303)
+- **Fix CRITICAL:** Khi backend POST tới `http://moodle:8080` (Docker internal), Moodle trả 303 redirect về `http://221.132.21.13:8080` (public IP, do wwwroot khác hostname).
+  `HttpClient.Redirect.NORMAL` tự động follow redirect nhưng **chuyển POST thành GET** (theo RFC 7231 §6.4.4) → POST body chứa `wstoken` bị mất → Moodle trả `invalidtoken`.
+- **Fix:** Đổi `followRedirects(NORMAL)` → `followRedirects(NEVER)`. Khi nhận 3xx, thủ công re-POST đến `Location` URL với cùng body gốc.
+- Xử lý cả 301/302/303/307 redirect — log rõ URL redirect trước và sau.
+
+#### `MoodleClient.java` — XML error response bị nhầm thành HTML
+- **Fix MEDIUM:** Moodle trả XML `<?xml ... <ERRORCODE>invalidtoken</ERRORCODE>` cho auth errors kể cả khi request `moodlewsrestformat=json`. Code cũ phát hiện `<` → log là "HTML response" → mất thông báo lỗi thực.
+- **Fix:** Thêm parser XML: detect `<?xml` prefix → extract `<ERRORCODE>` và `<MESSAGE>` → throw `MoodleApiException` với errorcode + message rõ ràng.
+
+#### `SecurityConfig.java` — `/courses/enrolled` cho phép truy cập không xác thực
+- **Fix CRITICAL:** `requestMatchers("/api/v1/courses/{id}").permitAll()` vô tình match cả `/courses/enrolled`, `/courses/assigned`, `/courses/dashboard`, `/courses/recent` (vì `{id}` match bất kỳ path segment nào).
+  → Request không có JWT token vẫn đi qua → `@AuthenticationPrincipal UserDetails user = null` → NPE → **500 Internal Server Error**.
+- **Fix:** Thêm explicit `.authenticated()` matcher cho `/courses/enrolled`, `/courses/assigned`, `/courses/recent`, `/courses/dashboard` **trước** pattern `{id}`. Đổi `{id}` thành `{id:\\d+}` (chỉ match số).
+
+#### `CourseController.java` + `UserController.java` — NPE khi `@AuthenticationPrincipal` null
+- **Fix HIGH:** `getUserId(UserDetails user)` gọi `user.getUsername()` không kiểm tra null → NPE nếu request không xác thực.
+- **Fix:** Thêm null check → throw `BadRequestException("Authentication required")`.
+
+#### `MoodleSyncService.provisionMoodleUser()` — Retry throw uncaught exception
+- **Fix MEDIUM:** Trong catch block khi `createUser` thất bại, gọi `getUserByUsername()` để retry lookup. Nếu retry cũng thất bại, `MoodleApiException` mới ném ra từ **bên trong catch block** — không được bắt → propagate qua REQUIRES_NEW transaction → exception khó debug.
+- **Fix:** Wrap retry lookup trong try/catch riêng. Nếu retry thất bại, ném exception gốc (không phải exception retry).
+
+#### `docker-compose.prod.yml` — `MOODLE_SERVICE_NAME` hardcoded sai
+- **Fix MEDIUM:** Hardcoded `englishedu_backend` nhưng Moodle service short name thực tế là `Sunshine_BE`.
+- **Fix:** Đổi thành `${MOODLE_SERVICE_NAME:-Sunshine_BE}` (env var với default đúng).
+
+### New Features
+
+#### `MoodleController.java` — Diagnostic endpoint
+- **Thêm:** `GET /api/v1/admin/moodle/diagnose` — kiểm tra toàn bộ cấu hình Moodle:
+  - Token configured? URL configured? Connection OK?
+  - Available vs missing functions (11 functions kiểm tra)
+  - Service name, Moodle version, site name, auth user
+
+### Tests
+
+#### `EnrollmentServiceTest.java` (mới — 17 tests)
+- `getEnrolledCourses`: student (no moodleId, with moodleId, Moodle fail gracefully), admin (all courses), user not found
+- `enroll`: free course auto-activate, already enrolled, not assigned, guest user blocked
+- `updateEnrollment`: progress 100% → completed, partial progress → inprogress
+- `getDashboardStats`: correct counts
+- Admin: `approveEnrollment`, `revokeEnrollment`, `directEnrollByAdmin` (new + reactivate revoked)
+
+**Tổng số tests: 84 (tăng từ 67)**
 
 ---
 
@@ -135,7 +187,7 @@
 - **Fix:** Đổi `@Configuration` → `@Component` (đúng convention cho `@ConfigurationProperties`)
 
 #### `.env.prod.example`
-- **Fix:** Cập nhật IP từ `14.225.192.133` → `14.225.217.172`
+- **Fix:** Cập nhật IP từ `221.132.21.13` → `221.132.21.13`
 
 #### `DEPLOY-GUIDE.md`
 - **Fix:** Cập nhật IP server
@@ -271,8 +323,8 @@ curl -X POST http://localhost/api/v1/admin/moodle/sync-enrollments \
 
 | Biến | Giá trị |
 |------|---------|
-| Server IP | `14.225.217.172` |
-| Moodle wwwroot | `http://14.225.217.172:8080` |
+| Server IP | `221.132.21.13` |
+| Moodle wwwroot | `http://221.132.21.13:8080` |
 | Moodle service | `englishedu_backend` |
 | Moodle token | `a9451d4adc6bf611b14a917b21cfe35e1bf85551` |
 | SSO secret | trong `.env.prod` |
