@@ -173,11 +173,29 @@ public class MoodleClient {
         params.put("users[0][auth]", "manual");
 
         JsonNode result = call("core_user_create_users", params);
-        JsonNode created = result.isArray() ? result.get(0) : null;
-        if (created == null || !created.has("id")) {
-            throw new MoodleApiException("core_user_create_users returned unexpected response: " + result);
+        log.info("core_user_create_users response type={} value={}",
+                result != null ? result.getNodeType() : "null",
+                result != null ? result.toString().substring(0, Math.min(300, result.toString().length())) : "null");
+
+        if (result == null) {
+            throw new MoodleApiException("core_user_create_users returned null");
         }
-        return created.path("id").asLong();
+        if (!result.isArray()) {
+            throw new MoodleApiException("core_user_create_users returned non-array (" + result.getNodeType()
+                    + "): " + result.toString().substring(0, Math.min(500, result.toString().length())));
+        }
+        if (result.isEmpty()) {
+            throw new MoodleApiException("core_user_create_users returned empty array");
+        }
+        JsonNode created = result.get(0);
+        if (created == null || created.isNull() || !created.has("id")) {
+            throw new MoodleApiException("core_user_create_users returned no valid user: " + result);
+        }
+        long moodleId = created.path("id").asLong();
+        if (moodleId <= 0) {
+            throw new MoodleApiException("core_user_create_users returned invalid id=" + moodleId + ": " + result);
+        }
+        return moodleId;
     }
 
     /**
@@ -188,7 +206,12 @@ public class MoodleClient {
         params.put("field", "username");
         params.put("values[0]", username);
         JsonNode result = call("core_user_get_users_by_field", params);
-        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
+        if (result == null || !result.isArray()) {
+            log.warn("getUserByUsername('{}') got non-array response: {}", username,
+                    result != null ? result.getNodeType() + " " + result.toString().substring(0, Math.min(200, result.toString().length())) : "null");
+            return null;
+        }
+        return result.isEmpty() ? null : result.get(0);
     }
 
     /**
@@ -199,7 +222,12 @@ public class MoodleClient {
         params.put("field", "email");
         params.put("values[0]", email);
         JsonNode result = call("core_user_get_users_by_field", params);
-        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
+        if (result == null || !result.isArray()) {
+            log.warn("getUserByEmail('{}') got non-array response: {}", email,
+                    result != null ? result.getNodeType() + " " + result.toString().substring(0, Math.min(200, result.toString().length())) : "null");
+            return null;
+        }
+        return result.isEmpty() ? null : result.get(0);
     }
 
     /**
@@ -229,9 +257,12 @@ public class MoodleClient {
         params.put("courses[0][visible]", "1");
 
         JsonNode result = call("core_course_create_courses", params);
-        JsonNode created = result.isArray() ? result.get(0) : null;
-        if (created == null || !created.has("id")) {
+        if (result == null || !result.isArray() || result.isEmpty()) {
             throw new MoodleApiException("core_course_create_courses returned unexpected response: " + result);
+        }
+        JsonNode created = result.get(0);
+        if (created == null || created.isNull() || !created.has("id")) {
+            throw new MoodleApiException("core_course_create_courses returned no valid course: " + result);
         }
         return created.path("id").asLong();
     }

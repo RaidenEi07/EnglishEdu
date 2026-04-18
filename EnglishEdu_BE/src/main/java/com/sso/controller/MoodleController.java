@@ -40,6 +40,16 @@ public class MoodleController {
 
     /* ─────── Admin endpoints (/api/v1/admin/moodle/**) ─── */
 
+    /**
+     * Diagnostic check: tests Moodle connectivity, token, available functions.
+     * Use this to verify Moodle is properly configured before syncing.
+     */
+    @GetMapping("/admin/moodle/diagnose")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> diagnose() {
+        Map<String, Object> result = moodleSyncService.diagnosticCheck();
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
     @PostMapping("/admin/moodle/sync-courses")
     public ResponseEntity<ApiResponse<Map<String, Object>>> syncAllCourses() {
         int count = moodleSyncService.syncAllCourses();

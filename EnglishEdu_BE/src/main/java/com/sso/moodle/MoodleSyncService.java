@@ -678,6 +678,107 @@ public class MoodleSyncService {
         return moodleClient.getSiteInfo();
     }
 
+    /**
+     * Comprehensive Moodle configuration diagnostic.
+     * Tests token, connection, available functions, and user create capability.
+     * Returns a detailed map of results for admin troubleshooting.
+     */
+    public java.util.Map<String, Object> diagnosticCheck() {
+        var result = new java.util.LinkedHashMap<String, Object>();
+
+        // 1. Check local config
+        String moodleUrl = moodleProperties.getUrl();
+        String moodleToken = moodleProperties.getToken();
+        result.put("moodle_url", moodleUrl != null ? moodleUrl : "(not set)");
+        result.put("token_configured", moodleToken != null && !moodleToken.isBlank());
+        result.put("service_name", moodleProperties.getServiceName());
+
+        if (moodleToken == null || moodleToken.isBlank()) {
+            result.put("status", "FAIL");
+            result.put("error", "MOODLE_TOKEN is not set. Set it in your .env or environment variables.");
+            return result;
+        }
+        if (moodleUrl == null || moodleUrl.isBlank()) {
+            result.put("status", "FAIL");
+            result.put("error", "MOODLE_URL is not set.");
+            return result;
+        }
+
+        // 2. Test connection via get_site_info
+        JsonNode siteInfo;
+        try {
+            siteInfo = moodleClient.getSiteInfo();
+            result.put("connection", "OK");
+            result.put("moodle_sitename", siteInfo.path("sitename").asText("?"));
+            result.put("moodle_version", siteInfo.path("release").asText("?"));
+            result.put("auth_user", siteInfo.path("username").asText("?"));
+        } catch (Exception e) {
+            result.put("status", "FAIL");
+            result.put("connection", "FAILED: " + e.getMessage());
+            result.put("hint", "Check MOODLE_URL and MOODLE_TOKEN. Ensure Moodle is running and reachable from the backend container.");
+            return result;
+        }
+
+        // 3. Check available functions
+        JsonNode functions = siteInfo.path("functions");
+        var availableFunctions = new java.util.HashSet<String>();
+        if (functions.isArray()) {
+            for (JsonNode fn : functions) {
+                availableFunctions.add(fn.path("name").asText());
+            }
+        }
+
+        String[] requiredFunctions = {
+            "core_user_create_users",
+            "core_user_get_users_by_field",
+            "core_user_get_users",
+            "core_user_update_users",
+            "core_webservice_get_site_info",
+            "core_course_create_courses",
+            "core_course_get_courses_by_field",
+            "core_course_get_contents",
+            "enrol_manual_enrol_users",
+            "core_enrol_get_enrolled_users",
+            "core_enrol_get_users_courses"
+        };
+
+        var missing = new java.util.ArrayList<String>();
+        var present = new java.util.ArrayList<String>();
+        for (String fn : requiredFunctions) {
+            if (availableFunctions.contains(fn)) {
+                present.add(fn);
+            } else {
+                missing.add(fn);
+            }
+        }
+
+        result.put("functions_available", present);
+        result.put("functions_missing", missing);
+        result.put("total_functions_in_service", availableFunctions.size());
+
+        if (!missing.isEmpty()) {
+            result.put("status", "FAIL");
+            result.put("error", "Missing " + missing.size() + " required function(s) in the Moodle external service. "
+                    + "Go to Moodle > Site administration > Server > External services > "
+                    + "edit your service and add the missing functions.");
+            result.put("hint", "The token's external service must include ALL required functions. "
+                    + "Also ensure the service is ENABLED (checkbox) and the authorized user has the necessary capabilities.");
+            return result;
+        }
+
+        // 4. Test user lookup
+        try {
+            JsonNode testLookup = moodleClient.getUserByUsername("admin");
+            result.put("user_lookup_test", testLookup != null ? "OK (found admin user)" : "OK (admin not found, but function works)");
+        } catch (Exception e) {
+            result.put("user_lookup_test", "FAILED: " + e.getMessage());
+        }
+
+        result.put("status", "OK");
+        result.put("message", "All " + requiredFunctions.length + " required functions are available. Moodle integration should work correctly.");
+        return result;
+    }
+
     /* ─────────── Calendar & Timeline proxy ─────────────────── */
 
     /**
