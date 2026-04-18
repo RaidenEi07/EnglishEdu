@@ -95,7 +95,7 @@ public class MoodleClient {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             String responseBody = httpResponse.body();
-            log.debug("Moodle API ← status={} body_len={}", httpResponse.statusCode(),
+            log.info("Moodle API ← func={} status={} body_len={}", wsFunction, httpResponse.statusCode(),
                     responseBody != null ? responseBody.length() : 0);
 
             // Detect HTML response (Moodle returning error page instead of JSON)
@@ -107,7 +107,13 @@ public class MoodleClient {
                         + ". Check Moodle REST protocol is enabled and function is in the external service.");
             }
 
+            if (responseBody == null || responseBody.isBlank()) {
+                throw new MoodleApiException("Moodle returned empty response for " + wsFunction);
+            }
+
             JsonNode node = objectMapper.readTree(responseBody);
+
+            // Check multiple error formats Moodle can return
             if (node.has("exception")) {
                 String msg = node.path("message").asText("Moodle API error");
                 log.error("Moodle API error: func={} errorcode={} msg={} debuginfo={}",
@@ -115,6 +121,20 @@ public class MoodleClient {
                         node.path("debuginfo").asText(""));
                 throw new MoodleApiException(msg);
             }
+            if (node.has("errorcode")) {
+                String msg = node.path("message").asText(node.path("error").asText("Moodle API error"));
+                log.error("Moodle API errorcode: func={} errorcode={} msg={}",
+                        wsFunction, node.path("errorcode").asText(), msg);
+                throw new MoodleApiException(msg);
+            }
+            if (node.has("error") && node.path("error").isTextual()) {
+                String msg = node.path("error").asText("Moodle API error");
+                log.error("Moodle API error field: func={} msg={}", wsFunction, msg);
+                throw new MoodleApiException(msg);
+            }
+
+            log.debug("Moodle API response: func={} body={}", wsFunction,
+                    responseBody.substring(0, Math.min(500, responseBody.length())));
             return node;
         } catch (MoodleApiException e) {
             throw e;
@@ -132,19 +152,23 @@ public class MoodleClient {
 
     /**
      * Create a user on Moodle. Returns the moodle user id.
+     * Note: Moodle requires lowercase usernames — username is lowercased automatically.
      */
     public long createUser(String username, String password, String email,
                            String firstName, String lastName) {
+        // Moodle validates and stores usernames as lowercase
+        String moodleUsername = username.toLowerCase();
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("users[0][username]", username);
+        params.put("users[0][username]", moodleUsername);
         params.put("users[0][password]", password);
         params.put("users[0][email]", email);
-        params.put("users[0][firstname]", firstName != null ? firstName : username);
+        params.put("users[0][firstname]", firstName != null ? firstName : moodleUsername);
         params.put("users[0][lastname]", lastName != null ? lastName : ".");
         params.put("users[0][auth]", "manual");
 
         JsonNode result = call("core_user_create_users", params);
-        JsonNode created = result.isArray() ? result.get(0) : null;
+        // Moodle returns [{"id":...,"username":...}] on success
+        JsonNode created = extractFirstFromResult(result);
         if (created == null || !created.has("id")) {
             throw new MoodleApiException("core_user_create_users returned unexpected response: " + result);
         }
@@ -153,13 +177,14 @@ public class MoodleClient {
 
     /**
      * Get Moodle user by username. Returns null if not found.
+     * Searches using lowercase username (Moodle stores all usernames lowercase).
      */
     public JsonNode getUserByUsername(String username) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("field", "username");
-        params.put("values[0]", username);
+        params.put("values[0]", username.toLowerCase());
         JsonNode result = call("core_user_get_users_by_field", params);
-        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
+        return extractFirstFromResult(result);
     }
 
     /**
@@ -170,7 +195,27 @@ public class MoodleClient {
         params.put("field", "email");
         params.put("values[0]", email);
         JsonNode result = call("core_user_get_users_by_field", params);
-        return result.isArray() && !result.isEmpty() ? result.get(0) : null;
+        return extractFirstFromResult(result);
+    }
+
+    /**
+     * Extract the first user object from a Moodle API response.
+     * Handles two formats:
+     *   - Plain array:   [{...}, ...]
+     *   - Wrapped object: {"users": [{...}, ...]}
+     * Returns null if no users found.
+     */
+    private JsonNode extractFirstFromResult(JsonNode result) {
+        if (result == null || result.isNull()) return null;
+        if (result.isArray()) {
+            return result.isEmpty() ? null : result.get(0);
+        }
+        // Handle wrapped format {"users":[...]} returned by some Moodle versions
+        if (result.isObject() && result.has("users")) {
+            JsonNode users = result.get("users");
+            return (users.isArray() && !users.isEmpty()) ? users.get(0) : null;
+        }
+        return null;
     }
 
     /**
@@ -200,7 +245,7 @@ public class MoodleClient {
         params.put("courses[0][visible]", "1");
 
         JsonNode result = call("core_course_create_courses", params);
-        JsonNode created = result.isArray() ? result.get(0) : null;
+        JsonNode created = extractFirstFromResult(result);
         if (created == null || !created.has("id")) {
             throw new MoodleApiException("core_course_create_courses returned unexpected response: " + result);
         }
@@ -655,12 +700,16 @@ public class MoodleClient {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
             String responseBody = httpResponse.body();
-            log.debug("Moodle API ← status={} body_len={}", httpResponse.statusCode(),
-                    responseBody != null ? responseBody.length() : 0);
+            log.info("Moodle API ← func={} (user-token) status={} body_len={}", wsFunction,
+                    httpResponse.statusCode(), responseBody != null ? responseBody.length() : 0);
 
             if (responseBody != null && responseBody.trim().startsWith("<")) {
                 log.error("Moodle returned HTML instead of JSON for func={} (user-token)", wsFunction);
                 throw new MoodleApiException("Moodle returned HTML (not JSON) for " + wsFunction);
+            }
+
+            if (responseBody == null || responseBody.isBlank()) {
+                throw new MoodleApiException("Moodle returned empty response for " + wsFunction);
             }
 
             JsonNode node = objectMapper.readTree(responseBody);
@@ -668,6 +717,17 @@ public class MoodleClient {
                 String msg = node.path("message").asText("Moodle API error");
                 log.error("Moodle API error (user-token): func={} errorcode={} msg={}",
                         wsFunction, node.path("errorcode").asText(), msg);
+                throw new MoodleApiException(msg);
+            }
+            if (node.has("errorcode")) {
+                String msg = node.path("message").asText(node.path("error").asText("Moodle API error"));
+                log.error("Moodle API errorcode (user-token): func={} errorcode={} msg={}",
+                        wsFunction, node.path("errorcode").asText(), msg);
+                throw new MoodleApiException(msg);
+            }
+            if (node.has("error") && node.path("error").isTextual()) {
+                String msg = node.path("error").asText("Moodle API error");
+                log.error("Moodle API error field (user-token): func={} msg={}", wsFunction, msg);
                 throw new MoodleApiException(msg);
             }
             return node;

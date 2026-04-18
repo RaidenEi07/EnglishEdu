@@ -60,26 +60,63 @@ public class MoodleSyncService {
                 moodleProperties.getUrl(),
                 moodleProperties.getToken() != null && !moodleProperties.getToken().isBlank());
 
-        JsonNode existing = moodleClient.getUserByUsername(user.getUsername());
+        // Step 1: Try to find existing user on Moodle by username, then by email
+        JsonNode existing = null;
+        try {
+            existing = moodleClient.getUserByUsername(user.getUsername());
+        } catch (Exception e) {
+            log.warn("[MoodleSync] getUserByUsername('{}') failed: {}", user.getUsername(), e.getMessage());
+        }
         if (existing == null && user.getEmail() != null && !user.getEmail().isBlank()) {
-            existing = moodleClient.getUserByEmail(user.getEmail());
-            if (existing != null) {
-                log.info("[MoodleSync] User '{}' not found by username but found by email on Moodle", user.getUsername());
+            try {
+                existing = moodleClient.getUserByEmail(user.getEmail());
+                if (existing != null) {
+                    log.info("[MoodleSync] User '{}' not found by username but found by email on Moodle", user.getUsername());
+                }
+            } catch (Exception e) {
+                log.warn("[MoodleSync] getUserByEmail('{}') failed: {}", user.getEmail(), e.getMessage());
             }
         }
+
         long moodleId;
         if (existing != null) {
             moodleId = existing.path("id").asLong();
+            if (moodleId == 0) {
+                throw new MoodleApiException("Moodle user found for '" + user.getUsername()
+                        + "' but has no valid id: " + existing);
+            }
             log.info("[MoodleSync] User '{}' already exists on Moodle (moodleId={})", user.getUsername(), moodleId);
         } else {
+            // Step 2: Create the user on Moodle
             String moodlePassword = "Sso!" + generateRandomHex(12);
-            moodleId = moodleClient.createUser(
-                    user.getUsername(),
-                    moodlePassword,
-                    user.getEmail(),
-                    user.getFirstName() != null ? user.getFirstName() : user.getUsername(),
-                    user.getLastName() != null ? user.getLastName() : "."
-            );
+            try {
+                moodleId = moodleClient.createUser(
+                        user.getUsername(),
+                        moodlePassword,
+                        user.getEmail(),
+                        user.getFirstName() != null ? user.getFirstName() : user.getUsername(),
+                        user.getLastName() != null ? user.getLastName() : "."
+                );
+            } catch (MoodleApiException e) {
+                // Creation failed — user might already exist (duplicate email/username).
+                // Try one more lookup before giving up.
+                log.warn("[MoodleSync] createUser failed for '{}': {}. Retrying lookup…",
+                        user.getUsername(), e.getMessage());
+                JsonNode retryLookup = moodleClient.getUserByUsername(user.getUsername());
+                if (retryLookup == null && user.getEmail() != null) {
+                    retryLookup = moodleClient.getUserByEmail(user.getEmail());
+                }
+                if (retryLookup != null && retryLookup.path("id").asLong() > 0) {
+                    moodleId = retryLookup.path("id").asLong();
+                    log.info("[MoodleSync] Found existing user '{}' on retry (moodleId={})",
+                            user.getUsername(), moodleId);
+                } else {
+                    throw e; // truly cannot create or find user
+                }
+                // skip token request since we don't know the password
+                user.setMoodleId(moodleId);
+                return moodleId;
+            }
             log.info("[MoodleSync] Created Moodle user '{}' (moodleId={})", user.getUsername(), moodleId);
 
             try {
