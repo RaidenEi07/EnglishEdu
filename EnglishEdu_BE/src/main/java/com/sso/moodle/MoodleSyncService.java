@@ -895,7 +895,7 @@ public class MoodleSyncService {
         params.put("userid", String.valueOf(user.getMoodleId()));
         params.put("status", "all");
         params.put("includepreviews", "0");
-        return moodleClient.callAsUser("mod_quiz_get_user_quiz_attempts", params, token);
+        return moodleClient.callAsUser("mod_quiz_get_user_attempts", params, token);
     }
 
     public JsonNode startQuizAttempt(long quizId, User user) {
