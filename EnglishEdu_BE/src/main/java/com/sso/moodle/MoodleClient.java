@@ -795,7 +795,11 @@ public class MoodleClient {
      * @return the token string
      */
     public String requestUserToken(String username, String password, String serviceName) {
-        String endpoint = props.getUrl() + "/login/token.php";
+        // Use publicUrl for /login/token.php — Moodle checks Host vs $CFG->wwwroot and rejects
+        // requests from the internal Docker hostname with {"error":"Invalid url or port."}.
+        // The public URL bypasses this check. Unlike /webservice/rest/server.php, the token
+        // endpoint does NOT send a 303 redirect — it fails immediately on hostname mismatch.
+        String endpoint = props.getPublicUrl() + "/login/token.php";
         String formBody = "username=" + encode(username)
                 + "&password=" + encode(password)
                 + "&service=" + encode(serviceName);
