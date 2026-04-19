@@ -19,6 +19,9 @@ public class MoodleProperties {
     private String token;
     private String ssoSecret;
     private String serviceName = "moodle_mobile_app";
+    /** Service name for per-user token requests. Defaults to Moodle's built-in mobile service
+     *  which all authenticated users can access (no "Authorised users only" restriction). */
+    private String userServiceName = "moodle_mobile_app";
 
     @PostConstruct
     void validate() {

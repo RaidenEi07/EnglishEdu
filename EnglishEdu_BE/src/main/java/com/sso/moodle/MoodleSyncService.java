@@ -134,7 +134,7 @@ public class MoodleSyncService {
 
             try {
                 String token = moodleClient.requestUserToken(
-                        user.getUsername(), moodlePassword, moodleProperties.getServiceName());
+                        user.getUsername(), moodlePassword, moodleProperties.getUserServiceName());
                 user.setMoodleToken(token);
             } catch (Exception e) {
                 log.warn("[MoodleSync] Could not obtain Moodle token for '{}': {}", user.getUsername(), e.getMessage());
@@ -181,7 +181,7 @@ public class MoodleSyncService {
 
         // Request a token using the new password
         String token = moodleClient.requestUserToken(
-                user.getUsername(), tempPassword, moodleProperties.getServiceName());
+                user.getUsername(), tempPassword, moodleProperties.getUserServiceName());
         user.setMoodleToken(token);
         userRepository.save(user);
         log.info("Obtained Moodle token for existing user {}", user.getUsername());

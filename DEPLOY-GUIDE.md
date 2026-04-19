@@ -229,9 +229,30 @@ Sau khi Moodle chạy ổn, cần thiết lập thủ công:
      - `core_course_get_courses`
      - `core_course_get_courses_by_field`
      - `core_course_get_contents`
+     - `core_enrol_get_enrolled_users`
+     - `core_enrol_get_users_courses`
      - `enrol_manual_enrol_users`
      - `enrol_manual_unenrol_users`
      - `gradereport_user_get_grade_items`
+     - `core_calendar_get_calendar_events`
+     - `core_calendar_get_action_events_by_timesort`
+     - `core_completion_get_activities_completion_status`
+     - `core_completion_update_activity_completion_status_manually`
+     - `mod_assign_get_assignments`
+     - `mod_assign_get_submission_status`
+     - `mod_assign_save_submission`
+     - `mod_assign_submit_for_grading`
+     - `mod_quiz_get_quizzes_by_courses`
+     - `mod_quiz_get_user_quiz_attempts`
+     - `mod_quiz_start_attempt`
+     - `mod_quiz_get_attempt_data`
+     - `mod_quiz_save_attempt`
+     - `mod_quiz_process_attempt`
+     - `mod_quiz_get_attempt_review`
+     - `mod_quiz_get_attempt_summary`
+     - `mod_page_get_pages_by_courses`
+     - `mod_resource_get_resources_by_courses`
+     - `mod_url_get_urls_by_courses`
 4. **Site Administration → Plugins → Web services → Manage tokens** → tạo token cho `admin` với service trên
 
 **C. Áp dụng customization (nút "Quay lại Dashboard"):**
