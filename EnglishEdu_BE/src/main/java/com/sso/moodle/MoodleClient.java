@@ -812,6 +812,25 @@ public class MoodleClient {
             HttpResponse<String> httpResponse =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
+            // Handle redirect — same as call(): Bitnami Moodle on internal hostname redirects
+            // (303) to the public URL. Re-POST with same body so the token request is processed
+            // on the public URL instead of the internal Docker hostname.
+            int statusCode = httpResponse.statusCode();
+            if (statusCode >= 300 && statusCode < 400) {
+                String location = httpResponse.headers().firstValue("Location").orElse(null);
+                if (location != null) {
+                    log.info("Moodle token endpoint {} redirect → re-POST to {}", statusCode, location);
+                    HttpRequest redirectRequest = HttpRequest.newBuilder()
+                            .uri(URI.create(location))
+                            .header("Content-Type", "application/x-www-form-urlencoded")
+                            .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
+                            .build();
+                    httpResponse = httpClient.send(redirectRequest,
+                            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                    log.info("Moodle token after redirect ← status={}", httpResponse.statusCode());
+                }
+            }
+
             JsonNode node = objectMapper.readTree(httpResponse.body());
             if (node.has("token")) {
                 String token = node.path("token").asText();
