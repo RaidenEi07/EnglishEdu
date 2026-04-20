@@ -158,17 +158,19 @@ public class MoodleClient {
 
             // Check multiple error formats Moodle can return
             if (node.has("exception")) {
+                String errorCode = node.path("errorcode").asText("");
                 String msg = node.path("message").asText("Moodle API error");
                 log.error("Moodle API error: func={} errorcode={} msg={} debuginfo={}",
-                        wsFunction, node.path("errorcode").asText(), msg,
+                        wsFunction, errorCode, msg,
                         node.path("debuginfo").asText(""));
-                throw new MoodleApiException(msg);
+                throw new MoodleApiException(msg, errorCode);
             }
             if (node.has("errorcode")) {
+                String errorCode = node.path("errorcode").asText("");
                 String msg = node.path("message").asText(node.path("error").asText("Moodle API error"));
                 log.error("Moodle API errorcode: func={} errorcode={} msg={}",
-                        wsFunction, node.path("errorcode").asText(), msg);
-                throw new MoodleApiException(msg);
+                        wsFunction, errorCode, msg);
+                throw new MoodleApiException(msg, errorCode);
             }
             if (node.has("error") && node.path("error").isTextual()) {
                 String msg = node.path("error").asText("Moodle API error");
@@ -748,9 +750,31 @@ public class MoodleClient {
             HttpResponse<String> httpResponse =
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
+            int statusCode = httpResponse.statusCode();
+
+            // Handle redirect manually — re-POST to Location with same body.
+            // Same as callMoodleApi: HTTP 303 converts POST→GET, dropping the POST body,
+            // which causes Moodle to return HTML / "invalidtoken".
+            if (statusCode >= 300 && statusCode < 400) {
+                String location = httpResponse.headers().firstValue("Location").orElse(null);
+                if (location == null) {
+                    throw new MoodleApiException("Moodle redirected (HTTP " + statusCode + ") but no Location header");
+                }
+                log.info("Moodle {} redirect (user-token) → re-POST to {} (func={})", statusCode, location, wsFunction);
+                HttpRequest redirectRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(location))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .timeout(Duration.ofSeconds(30))
+                        .POST(HttpRequest.BodyPublishers.ofString(formBody, StandardCharsets.UTF_8))
+                        .build();
+                httpResponse = httpClient.send(redirectRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                statusCode = httpResponse.statusCode();
+                log.info("Moodle after redirect (user-token) ← func={} status={}", wsFunction, statusCode);
+            }
+
             String responseBody = httpResponse.body();
             log.info("Moodle API ← func={} (user-token) status={} body_len={}", wsFunction,
-                    httpResponse.statusCode(), responseBody != null ? responseBody.length() : 0);
+                    statusCode, responseBody != null ? responseBody.length() : 0);
 
             if (responseBody != null && responseBody.trim().startsWith("<")) {
                 log.error("Moodle returned HTML instead of JSON for func={} (user-token)", wsFunction);
@@ -763,16 +787,18 @@ public class MoodleClient {
 
             JsonNode node = objectMapper.readTree(responseBody);
             if (node.has("exception")) {
+                String errorCode = node.path("errorcode").asText("");
                 String msg = node.path("message").asText("Moodle API error");
                 log.error("Moodle API error (user-token): func={} errorcode={} msg={}",
-                        wsFunction, node.path("errorcode").asText(), msg);
-                throw new MoodleApiException(msg);
+                        wsFunction, errorCode, msg);
+                throw new MoodleApiException(msg, errorCode);
             }
             if (node.has("errorcode")) {
+                String errorCode = node.path("errorcode").asText("");
                 String msg = node.path("message").asText(node.path("error").asText("Moodle API error"));
                 log.error("Moodle API errorcode (user-token): func={} errorcode={} msg={}",
-                        wsFunction, node.path("errorcode").asText(), msg);
-                throw new MoodleApiException(msg);
+                        wsFunction, errorCode, msg);
+                throw new MoodleApiException(msg, errorCode);
             }
             if (node.has("error") && node.path("error").isTextual()) {
                 String msg = node.path("error").asText("Moodle API error");

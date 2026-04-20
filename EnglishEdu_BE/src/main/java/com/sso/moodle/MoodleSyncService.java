@@ -889,19 +889,70 @@ public class MoodleSyncService {
 
     public JsonNode getQuizAttempts(long quizId, User user) {
         if (user.getMoodleId() == null) return null;
-        String token = ensureMoodleToken(user);
         java.util.Map<String, String> params = new java.util.LinkedHashMap<>();
         params.put("quizid", String.valueOf(quizId));
         params.put("userid", String.valueOf(user.getMoodleId()));
         params.put("status", "all");
         params.put("includepreviews", "0");
-        return moodleClient.callAsUser("mod_quiz_get_user_attempts", params, token);
+        return moodleClient.call("mod_quiz_get_user_attempts", params);
     }
 
     public JsonNode startQuizAttempt(long quizId, User user) {
+        // Auto-enrol user in the quiz's Moodle course (required for mod_quiz_start_attempt)
+        if (user.getMoodleId() == null) ensureMoodleUser(user);
+        try {
+            long moodleCourseId = getMoodleCourseIdForQuiz(quizId);
+            moodleClient.enrolUser(user.getMoodleId(), moodleCourseId, MOODLE_ROLE_STUDENT);
+            log.info("Auto-enrolled user {} in Moodle course {} for quiz {}",
+                    user.getUsername(), moodleCourseId, quizId);
+        } catch (Exception e) {
+            log.warn("Could not auto-enrol {} for quiz {}: {}", user.getUsername(), quizId, e.getMessage());
+        }
         String token = ensureMoodleToken(user);
-        return moodleClient.callAsUser("mod_quiz_start_attempt",
-                java.util.Map.of("quizid", String.valueOf(quizId)), token);
+        try {
+            return moodleClient.callAsUser("mod_quiz_start_attempt",
+                    java.util.Map.of("quizid", String.valueOf(quizId)), token);
+        } catch (MoodleApiException e) {
+            // If there's already an attempt in progress, return that attempt instead of failing
+            if ("attemptstillinprogress".equals(e.getErrorCode())) {
+                log.info("Attempt already in progress for user {} quiz {}, returning existing attempt",
+                        user.getUsername(), quizId);
+                JsonNode attemptsResult = getQuizAttempts(quizId, user);
+                if (attemptsResult != null && attemptsResult.has("attempts")) {
+                    for (JsonNode attempt : attemptsResult.get("attempts")) {
+                        if ("inprogress".equals(attempt.path("state").asText(""))) {
+                            com.fasterxml.jackson.databind.node.ObjectNode wrapper =
+                                    com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+                            wrapper.set("attempt", attempt);
+                            wrapper.putArray("warnings");
+                            return wrapper;
+                        }
+                    }
+                }
+                // No in-progress attempt found despite the error — rethrow
+                throw e;
+            }
+            throw e;
+        }
+    }
+
+    private long getMoodleCourseIdForQuiz(long quizId) {
+        java.util.List<Long> moodleCourseIds = courseRepository.findAll().stream()
+                .map(com.sso.entity.Course::getMoodleCourseId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (!moodleCourseIds.isEmpty()) {
+            JsonNode result = moodleClient.getQuizzesByCourses(moodleCourseIds);
+            if (result != null && result.has("quizzes")) {
+                for (JsonNode q : result.get("quizzes")) {
+                    if (q.has("id") && q.get("id").asLong() == quizId) {
+                        return q.get("course").asLong();
+                    }
+                }
+            }
+        }
+        throw new RuntimeException("Cannot determine Moodle course for quiz " + quizId);
     }
 
     public JsonNode getAttemptData(long attemptId, int page, User user) {
