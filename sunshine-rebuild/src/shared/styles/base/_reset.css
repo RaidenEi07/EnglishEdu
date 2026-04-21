@@ -49,6 +49,18 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: var(--navbar-height);
 }
 
+/* Generic page wrapper — used by student-facing pages (my/dashboard, my/courses, my/grades) */
+.page-wrapper {
+    min-height: calc(100vh - var(--navbar-height));
+    background: var(--sso-body-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.page-wrapper > main {
+    flex: 1;
+}
+
 /* Selection highlight */
 ::selection {
     background: var(--sso-primary);

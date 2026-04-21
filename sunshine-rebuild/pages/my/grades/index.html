@@ -11,22 +11,30 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
 </head>
-<body class="bg-light">
+<body class="pagelayout-mygrades bg-light">
 
     <!-- Navbar -->
     <nav id="main-navbar"></nav>
 
-    <div class="mt-navbar container py-4">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb small">
-                <li class="breadcrumb-item"><a href="/index.html">Trang chủ</a></li>
-                <li class="breadcrumb-item"><a href="/pages/my/dashboard/">Bảng điều khiển</a></li>
-                <li class="breadcrumb-item active">Bảng điểm</li>
-            </ol>
-        </nav>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper mt-navbar">
 
-        <h4 class="fw-bold mb-4"><i class="fa fa-chart-bar text-primary me-2"></i>Bảng Điểm</h4>
+        <!-- Page Header -->
+        <header class="bg-white border-bottom py-3 shadow-sm">
+            <div class="container-fluid">
+                <nav aria-label="breadcrumb" class="mb-1">
+                    <ol class="breadcrumb small mb-0">
+                        <li class="breadcrumb-item"><a href="/index.html">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a href="/pages/my/dashboard/">Bảng điều khiển</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Bảng điểm</li>
+                    </ol>
+                </nav>
+                <h1 class="h4 fw-bold mb-0"><i class="fa fa-chart-bar text-primary me-2"></i>Bảng Điểm</h1>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container py-4">
 
         <!-- Loading -->
         <div id="gradesLoading" class="text-center py-5">
@@ -97,10 +105,13 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Footer -->
-    <footer id="page-footer"></footer>
+        </main>
+
+        <!-- Footer -->
+        <footer id="page-footer"></footer>
+
+    </div>
 
     <script type="module" src="/pages/my/grades/grades.ts"></script>
 </body>

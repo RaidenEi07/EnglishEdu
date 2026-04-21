@@ -11,6 +11,7 @@ import './login.css';
 import 'bootstrap';
 
 /* --- Shared modules --- */
+import { injectMinimalNavbar } from '../../src/shared/js/inject-navbar.ts';
 import { initI18n } from '../../src/shared/js/i18n.ts';
 import { login, guestLogin, register } from '../../src/shared/js/auth.ts';
 
@@ -124,6 +125,7 @@ function initRegisterForm(): void {
 }
 
 function initApp(): void {
+  injectMinimalNavbar();
   initI18n();
   initLoginForm();
   initRegisterForm();

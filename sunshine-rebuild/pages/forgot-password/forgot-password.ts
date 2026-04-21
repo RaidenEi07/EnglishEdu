@@ -13,6 +13,7 @@ import './forgot-password.css';
 import 'bootstrap';
 
 /* --- Shared modules --- */
+import { injectMinimalNavbar } from '../../src/shared/js/inject-navbar.ts';
 import { initI18n } from '../../src/shared/js/i18n.ts';
 import { requestPasswordReset, resetPassword } from '../../src/shared/js/auth.ts';
 
@@ -101,6 +102,7 @@ function initStep2(token: string): void {
 }
 
 function initApp(): void {
+  injectMinimalNavbar();
   initI18n();
   const token = new URLSearchParams(window.location.search).get('token');
   if (token) {

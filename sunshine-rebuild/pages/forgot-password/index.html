@@ -12,14 +12,8 @@
     <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
 </head>
 <body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar fixed-top navbar-light bg-white shadow">
-        <div class="container-fluid">
-            <a href="/index.html" class="navbar-brand d-flex align-items-center m-0 me-4 p-0">
-                <img src="/images/logo.jpg" class="logo me-1" alt="SSO" height="40">
-            </a>
-        </div>
-    </nav>
+    <!-- Navbar (injected by injectMinimalNavbar) -->
+    <nav id="main-navbar"></nav>
 
     <!-- Forgot Password / Reset Password -->
     <main class="mt-navbar d-flex align-items-center justify-content-center min-vh-100 py-5">

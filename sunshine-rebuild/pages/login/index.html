@@ -12,26 +12,8 @@
     <style>body{opacity:0}body.ready{opacity:1;transition:opacity .12s}</style>
 </head>
 <body class="bg-light">
-    <!-- Navbar -->
-    <nav class="navbar fixed-top navbar-light bg-white shadow">
-        <div class="container-fluid">
-            <a href="/index.html" class="navbar-brand d-flex align-items-center m-0 me-4 p-0">
-                <img src="/images/logo.jpg" class="logo me-1" alt="SSO" height="40">
-            </a>
-            <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-2">
-                <div class="dropdown">
-                    <a href="#" class="btn dropdown-toggle" id="langToggle" data-bs-toggle="dropdown" aria-label="Ngôn ngữ">
-                        <i class="fa fa-language me-1"></i>
-                        <span class="d-none d-sm-inline" data-i18n="nav.language">Vietnamese ‎(vi)‎</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#" data-lang="en">English ‎(en)‎</a></li>
-                        <li><a class="dropdown-item" href="#" data-lang="vi">Vietnamese ‎(vi)‎</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navbar (injected by injectMinimalNavbar) -->
+    <nav id="main-navbar"></nav>
 
     <!-- Login / Register Form -->
     <main class="mt-navbar d-flex align-items-center justify-content-center min-vh-100 py-5">

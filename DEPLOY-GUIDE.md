@@ -361,8 +361,7 @@ cd ~/EnglishEdu
 docker compose -f docker-compose.prod.yml restart backend
 
 # Hoặc restart tất cả
-docker compose -f docker-compose.prod.yml restart
-```
+b```
 
 ### Kiểm tra sau khi restart
 

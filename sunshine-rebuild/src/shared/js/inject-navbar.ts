@@ -3,6 +3,36 @@
  * Call injectNavbar() BEFORE initNavbar() so all elements exist when initNavbar() runs.
  */
 
+/**
+ * Minimal navbar for auth pages (login, forgot-password).
+ * Renders only logo + language switcher — no nav links, no user menu.
+ */
+export function injectMinimalNavbar(): void {
+  const el = document.getElementById('main-navbar');
+  if (!el) return;
+
+  el.className = 'navbar fixed-top navbar-light bg-white shadow';
+
+  el.innerHTML = `
+    <div class="container-fluid">
+      <a href="/index.html" class="navbar-brand d-flex align-items-center m-0 me-4 p-0">
+        <img src="/images/logo.jpg" class="logo me-1" alt="SSO" height="40">
+      </a>
+      <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-2">
+        <div class="dropdown">
+          <a href="#" class="btn dropdown-toggle" id="langToggle" data-bs-toggle="dropdown" aria-label="Ngôn ngữ">
+            <i class="fa fa-language me-1"></i>
+            <span class="d-none d-sm-inline" data-i18n="nav.language">Vietnamese ‎(vi)‎</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langToggle">
+            <li><a class="dropdown-item" href="#" data-lang="en">English ‎(en)‎</a></li>
+            <li><a class="dropdown-item" href="#" data-lang="vi">Vietnamese ‎(vi)‎</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>`;
+}
+
 export function injectNavbar(): void {
   const el = document.getElementById('main-navbar');
   if (!el) return;
