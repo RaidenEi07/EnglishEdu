@@ -9,7 +9,7 @@ import { initNavbar } from '../../src/shared/js/navbar.ts';
 import { injectNavbar } from '../../src/shared/js/inject-navbar.ts';
 import { injectFooter } from '../../src/shared/js/footer.ts';
 import { requireAdmin, fetchAdminStats, formatDate, statusBadge } from './admin-utils.ts';
-import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '../../src/shared/js/api.ts';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload } from '../../src/shared/js/api.ts';
 import { toast } from '../../src/shared/js/toast.ts';
 import type { UserResponse, CourseResponse, AdminEnrollmentResponse, Page, CreateAdminUserRequest } from '../../src/shared/js/types.ts';
 
@@ -296,10 +296,17 @@ function handleCourseAction(e: Event): void {
 }
 
 function clearCourseModal(): void {
-  ['courseId','courseName','courseCategory','courseDescription','courseImageUrl','courseTeacherId'].forEach(id => {
+  ['courseId','courseName','courseCategory','courseDescription','courseTeacherId'].forEach(id => {
     const el = document.getElementById(id) as HTMLInputElement | null;
     if (el) el.value = '';
   });
+  (document.getElementById('courseImageUrl') as HTMLInputElement).value = '';
+  // Clear image upload controls
+  const fileEl = document.getElementById('courseImageFile') as HTMLInputElement | null;
+  if (fileEl) fileEl.value = '';
+  document.getElementById('courseImagePreviewWrap')?.classList.add('d-none');
+  const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+  if (previewEl) previewEl.src = '';
   (document.getElementById('courseLevel') as HTMLSelectElement).value      = '';
   (document.getElementById('coursePublished') as HTMLInputElement).checked = true;
   document.getElementById('courseModalAlert')!.className = 'alert d-none';
@@ -322,6 +329,12 @@ function openEditCourseModal(d: Record<string, string>): void {
   (document.getElementById('courseLevel') as HTMLSelectElement).value             = d.level || '';
   (document.getElementById('courseDescription') as HTMLTextAreaElement).value       = d.description || '';
   (document.getElementById('courseImageUrl') as HTMLInputElement).value          = d.imageurl || '';
+  // Show existing image preview in edit mode
+  if (d.imageurl) {
+    const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+    if (previewEl) previewEl.src = d.imageurl;
+    document.getElementById('courseImagePreviewWrap')?.classList.remove('d-none');
+  }
   (document.getElementById('courseTeacherId') as HTMLInputElement).value         = d.teacherid || '';
   (document.getElementById('coursePublished') as HTMLInputElement).checked       = d.published === 'true';
   courseModalInst?.show();
@@ -337,23 +350,34 @@ async function saveCourse(): Promise<void> {
     return;
   }
   const teacherRaw = (document.getElementById('courseTeacherId') as HTMLInputElement).value.trim();
+  const imageFile   = (document.getElementById('courseImageFile') as HTMLInputElement)?.files?.[0] ?? null;
+  const imageUrl    = (document.getElementById('courseImageUrl') as HTMLInputElement).value.trim() || null;
   const payload = {
     name,
     category:    (document.getElementById('courseCategory') as HTMLInputElement).value.trim() || null,
     level:       (document.getElementById('courseLevel') as HTMLSelectElement).value || null,
     description: (document.getElementById('courseDescription') as HTMLTextAreaElement).value.trim() || null,
-    imageUrl:    (document.getElementById('courseImageUrl') as HTMLInputElement).value.trim() || null,
+    imageUrl,
     // Send 0 to clear teacher (backend: teacherId == 0 → unassign); non-empty value assigns
     teacherId:   teacherRaw !== '' ? Number(teacherRaw) : 0,
     published:   (document.getElementById('coursePublished') as HTMLInputElement).checked,
   };
   saveBtn.disabled = true;
   try {
+    let savedId: number;
     if (courseIsEdit) {
       const id = (document.getElementById('courseId') as HTMLInputElement).value;
       await apiPut(`/admin/courses/${id}`, payload);
+      savedId = Number(id);
     } else {
-      await apiPost('/admin/courses', payload);
+      const created = await apiPost<CourseResponse>('/admin/courses', payload);
+      savedId = created.id;
+    }
+    // Upload image file if one was selected
+    if (imageFile) {
+      const fd = new FormData();
+      fd.append('file', imageFile);
+      await apiUpload(`/admin/courses/${savedId}/image`, fd);
     }
     courseModalInst?.hide();
     loadCourses(coursePage);
@@ -562,6 +586,30 @@ function initApp(): void {
   // ── Courses ───────────────────────────────────────────────────
   document.getElementById('addCourseBtn')!.addEventListener('click', openCreateCourseModal);
   document.getElementById('saveCourseBtn')!.addEventListener('click', saveCourse);
+
+  // Image file picker: preview on select
+  document.getElementById('courseImageFile')?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+      if (previewEl && ev.target?.result) {
+        previewEl.src = ev.target.result as string;
+        document.getElementById('courseImagePreviewWrap')?.classList.remove('d-none');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('clearCourseImageBtn')?.addEventListener('click', () => {
+    const fileEl = document.getElementById('courseImageFile') as HTMLInputElement | null;
+    if (fileEl) fileEl.value = '';
+    (document.getElementById('courseImageUrl') as HTMLInputElement).value = '';
+    const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+    if (previewEl) previewEl.src = '';
+    document.getElementById('courseImagePreviewWrap')?.classList.add('d-none');
+  });
+
   document.getElementById('courseApplyFilter')!.addEventListener('click', () => {
     courseKeyword   = (document.getElementById('courseSearch') as HTMLInputElement).value.trim();
     coursePublished = (document.getElementById('coursePublishedFilter') as HTMLSelectElement).value;

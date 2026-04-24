@@ -6,8 +6,10 @@ import com.sso.dto.response.EnrolledCourseResponse;
 import com.sso.entity.Course;
 import com.sso.entity.CourseTeacher;
 import com.sso.entity.Enrollment;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
@@ -43,4 +45,20 @@ public interface CourseMapper {
     @Mapping(source = "enrollment.hidden", target = "hidden")
     @Mapping(source = "enrollment.teacherNote", target = "teacherNote")
     EnrolledCourseResponse toEnrolledResponse(Enrollment enrollment);
+
+    /** Replace raw MinIO object paths with the stable proxy URL for CourseResponse. */
+    @AfterMapping
+    default void proxifyImageUrl(@MappingTarget CourseResponse response, Course course) {
+        if (response.getImageUrl() != null && response.getImageUrl().startsWith("course-images/")) {
+            response.setImageUrl("/api/v1/courses/" + course.getId() + "/image");
+        }
+    }
+
+    /** Replace raw MinIO object paths with the stable proxy URL for EnrolledCourseResponse. */
+    @AfterMapping
+    default void proxifyEnrolledImageUrl(@MappingTarget EnrolledCourseResponse response, Enrollment enrollment) {
+        if (response.getImageUrl() != null && response.getImageUrl().startsWith("course-images/")) {
+            response.setImageUrl("/api/v1/courses/" + enrollment.getCourse().getId() + "/image");
+        }
+    }
 }

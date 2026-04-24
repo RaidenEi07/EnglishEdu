@@ -527,9 +527,10 @@ public class MoodleSyncService {
         if (overviewFiles.isArray() && !overviewFiles.isEmpty()) {
             String fileUrl = overviewFiles.get(0).path("fileurl").asText("");
             if (!fileUrl.isBlank()) {
-                // Point imageUrl to our backend proxy — never expose the Moodle admin token to clients
                 String proxyPath = "/api/v1/moodle/course-image/" + course.getId();
-                if (!proxyPath.equals(course.getImageUrl())) {
+                // Preserve any custom or MinIO-backed image already chosen in EnglishEdu.
+                // Only manage the field when it is blank or already pointing at a Moodle-managed image.
+                if (shouldUseMoodleProxy(course.getImageUrl()) && !proxyPath.equals(course.getImageUrl())) {
                     course.setImageUrl(proxyPath);
                     changed = true;
                 }
@@ -1041,6 +1042,27 @@ public class MoodleSyncService {
     }
 
     /* ─────────── Helpers ───────────────────────────────────── */
+
+    private boolean shouldUseMoodleProxy(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return true;
+        }
+        if (imageUrl.startsWith("/api/v1/moodle/course-image/")) {
+            return true;
+        }
+        if (imageUrl.contains("/pluginfile.php/") || imageUrl.contains("/webservice/pluginfile.php/")) {
+            return true;
+        }
+
+        String moodleUrl = moodleProperties.getUrl();
+        if (moodleUrl != null && !moodleUrl.isBlank() && imageUrl.startsWith(moodleUrl + "/")) {
+            return true;
+        }
+
+        String moodlePublicUrl = moodleProperties.getPublicUrl();
+        return moodlePublicUrl != null && !moodlePublicUrl.isBlank()
+                && imageUrl.startsWith(moodlePublicUrl + "/");
+    }
 
     private static String generateRandomHex(int bytes) {
         byte[] buf = new byte[bytes];

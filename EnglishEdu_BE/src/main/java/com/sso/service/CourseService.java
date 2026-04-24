@@ -21,8 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -37,6 +39,7 @@ public class CourseService {
     private final LevelRepository levelRepository;
     private final CourseTeacherRepository courseTeacherRepository;
     private final MoodleSyncService moodleSyncService;
+    private final StorageService storageService;
 
     @Transactional(readOnly = true)
     public Page<CourseResponse> getCourses(String category, int page, int size) {
@@ -177,6 +180,48 @@ public class CourseService {
         } catch (Exception e) {
             log.warn("Moodle teacher enrolment sync failed for teacher={} course={}: {}", teacher.getUsername(), course.getId(), e.getMessage());
         }
+    }
+
+    /**
+     * Upload a cover image for a course. Stores the MinIO object path in DB;
+     * the mapper automatically converts it to the stable proxy URL in the response.
+     */
+    @Transactional
+    public CourseResponse uploadCourseImage(Long id, MultipartFile file) throws Exception {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        String objectName = storageService.uploadCourseImage(file);
+        course.setImageUrl(objectName);
+        return courseMapper.toResponse(courseRepository.save(course));
+    }
+
+    /**
+     * Container for raw image bytes + content type, used by the proxy endpoint.
+     */
+    public record ImageData(byte[] bytes, MediaType contentType) {}
+
+    /**
+     * Fetch the raw bytes of a course cover image stored in MinIO.
+     * Throws ResourceNotFoundException if the course has no MinIO-hosted image.
+     */
+    @Transactional(readOnly = true)
+    public ImageData getCourseImageData(Long id) throws Exception {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+        String imageUrl = course.getImageUrl();
+        if (imageUrl == null || !imageUrl.startsWith("course-images/")) {
+            throw new ResourceNotFoundException("No uploaded image for this course");
+        }
+        byte[] bytes = storageService.getFileBytes(imageUrl);
+        String ext = imageUrl.substring(imageUrl.lastIndexOf('.')).toLowerCase();
+        MediaType mediaType = switch (ext) {
+            case ".jpg", ".jpeg" -> MediaType.IMAGE_JPEG;
+            case ".png"          -> MediaType.IMAGE_PNG;
+            case ".gif"          -> MediaType.IMAGE_GIF;
+            case ".webp"         -> MediaType.parseMediaType("image/webp");
+            default              -> MediaType.APPLICATION_OCTET_STREAM;
+        };
+        return new ImageData(bytes, mediaType);
     }
 
     /**

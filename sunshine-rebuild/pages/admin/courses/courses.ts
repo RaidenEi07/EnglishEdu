@@ -8,7 +8,7 @@ import { initI18n } from '../../../src/shared/js/i18n.ts';
 import { initNavbar } from '../../../src/shared/js/navbar.ts';
 import { injectNavbar } from '../../../src/shared/js/inject-navbar.ts';
 import { injectFooter } from '../../../src/shared/js/footer.ts';
-import { apiGet, apiPost, apiPut, apiDelete } from '../../../src/shared/js/api.ts';
+import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from '../../../src/shared/js/api.ts';
 import { toast } from '../../../src/shared/js/toast.ts';
 import { requireAdmin, formatDate } from '../admin-utils.ts';
 import type { CourseResponse, Page, UserResponse, MoodleLaunchResponse } from '../../../src/shared/js/types.ts';
@@ -120,6 +120,12 @@ function clearModal(): void {
     if (el) el.value = '';
   });
   (document.getElementById('courseImageUrl') as HTMLInputElement).value = '';
+  // Clear image upload controls
+  const fileEl = document.getElementById('courseImageFile') as HTMLInputElement | null;
+  if (fileEl) fileEl.value = '';
+  document.getElementById('courseImagePreviewWrap')?.classList.add('d-none');
+  const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+  if (previewEl) previewEl.src = '';
   // Clear teacher search controls
   const teacherIdEl = document.getElementById('courseTeacherId') as HTMLInputElement | null;
   if (teacherIdEl) teacherIdEl.value = '';
@@ -151,6 +157,12 @@ function openEditModal(d: Record<string, string>): void {
   (document.getElementById('courseLevel') as HTMLSelectElement).value             = d.level || '';
   (document.getElementById('courseDescription') as HTMLTextAreaElement).value       = d.description || '';
   (document.getElementById('courseImageUrl') as HTMLInputElement).value          = d.imageurl || '';
+  // Show existing image preview in edit mode
+  if (d.imageurl) {
+    const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+    if (previewEl) previewEl.src = d.imageurl;
+    document.getElementById('courseImagePreviewWrap')?.classList.remove('d-none');
+  }
   (document.getElementById('coursePublished') as HTMLInputElement).checked       = d.published === 'true';
   // Pre-fill teacher if assigned
   if (d.teacherid && d.teachername) {
@@ -173,22 +185,35 @@ async function saveCourse(): Promise<void> {
     alertEl.textContent = 'Tên khóa học không được để trống.';
     return;
   }
+
+  const imageFile = (document.getElementById('courseImageFile') as HTMLInputElement)?.files?.[0] ?? null;
+  const imageUrl  = (document.getElementById('courseImageUrl') as HTMLInputElement).value.trim() || null;
+
   const payload = {
     name,
     category:    (document.getElementById('courseCategory') as HTMLInputElement).value.trim() || null,
     level:       (document.getElementById('courseLevel') as HTMLSelectElement).value || null,
     description: (document.getElementById('courseDescription') as HTMLTextAreaElement).value.trim() || null,
-    imageUrl:    (document.getElementById('courseImageUrl') as HTMLInputElement).value.trim() || null,
+    imageUrl,
     teacherId:   Number((document.getElementById('courseTeacherId') as HTMLInputElement).value) || null,
     published:   (document.getElementById('coursePublished') as HTMLInputElement).checked,
   };
   saveBtn.disabled = true;
   try {
+    let savedId: number;
     if (isEditMode) {
       const id = (document.getElementById('courseId') as HTMLInputElement).value;
       await apiPut(`/admin/courses/${id}`, payload);
+      savedId = Number(id);
     } else {
-      await apiPost('/admin/courses', payload);
+      const created = await apiPost<CourseResponse>('/admin/courses', payload);
+      savedId = created.id;
+    }
+    // Upload image file if one was selected
+    if (imageFile) {
+      const fd = new FormData();
+      fd.append('file', imageFile);
+      await apiUpload(`/admin/courses/${savedId}/image`, fd);
     }
     courseModalInst?.hide();
     loadCourses(currentPage);
@@ -305,6 +330,32 @@ function initApp(): void {
   });
 
   initTeacherSearch();
+
+  // Image file picker: show preview immediately on file select
+  document.getElementById('courseImageFile')?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+      if (previewEl && ev.target?.result) {
+        previewEl.src = ev.target.result as string;
+        document.getElementById('courseImagePreviewWrap')?.classList.remove('d-none');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Clear image button
+  document.getElementById('clearCourseImageBtn')?.addEventListener('click', () => {
+    const fileEl = document.getElementById('courseImageFile') as HTMLInputElement | null;
+    if (fileEl) fileEl.value = '';
+    (document.getElementById('courseImageUrl') as HTMLInputElement).value = '';
+    const previewEl = document.getElementById('courseImagePreview') as HTMLImageElement | null;
+    if (previewEl) previewEl.src = '';
+    document.getElementById('courseImagePreviewWrap')?.classList.add('d-none');
+  });
+
   loadCourses(0);
 }
 

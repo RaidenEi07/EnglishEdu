@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/admin/courses")
@@ -47,6 +48,17 @@ public class AdminCourseController {
     public ResponseEntity<ApiResponse<Void>> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return ResponseEntity.ok(ApiResponse.ok("Course deleted successfully"));
+    }
+
+    /**
+     * Upload a cover image for a course. The file is stored in MinIO under course-images/;
+     * the imageUrl in the response points to the stable proxy endpoint /api/v1/courses/{id}/image.
+     */
+    @PostMapping("/{id}/image")
+    public ResponseEntity<ApiResponse<CourseResponse>> uploadCourseImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) throws Exception {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.uploadCourseImage(id, file)));
     }
 
     /**

@@ -132,8 +132,18 @@
                         <textarea class="form-control" id="courseDescription" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">URL ảnh bìa</label>
-                        <input type="url" class="form-control" id="courseImageUrl">
+                        <label class="form-label">Ảnh bìa</label>
+                        <div id="courseImagePreviewWrap" class="mb-2 d-none">
+                            <div class="d-flex align-items-center gap-2">
+                                <img id="courseImagePreview" alt="Ảnh bìa" style="max-width:180px;max-height:110px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6">
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0" id="clearCourseImageBtn">
+                                    <i class="fa fa-times me-1"></i>Xóa
+                                </button>
+                            </div>
+                        </div>
+                        <input type="file" class="form-control form-control-sm mb-1" id="courseImageFile" accept="image/jpeg,image/png,image/webp,image/gif">
+                        <div class="form-text">Chọn file ảnh (JPG, PNG, WebP, GIF — tối đa 10MB)</div>
+                        <input type="hidden" id="courseImageUrl">
                     </div>
                     <div class="mb-3 position-relative">
                         <label class="form-label">Giáo viên phụ trách</label>

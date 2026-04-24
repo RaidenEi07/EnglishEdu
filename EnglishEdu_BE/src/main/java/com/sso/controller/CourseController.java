@@ -37,6 +37,23 @@ public class CourseController {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getCourse(id)));
     }
 
+    /**
+     * Public proxy for course cover images uploaded to MinIO.
+     * No auth required — course images are publicly viewable.
+     */
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getCourseImage(@PathVariable Long id) {
+        try {
+            CourseService.ImageData data = courseService.getCourseImageData(id);
+            return ResponseEntity.ok()
+                    .contentType(data.contentType())
+                    .header("Cache-Control", "public, max-age=86400")
+                    .body(data.bytes());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/enrolled")
     public ResponseEntity<ApiResponse<List<EnrolledCourseResponse>>> getEnrolledCourses(
             @AuthenticationPrincipal UserDetails user) {
