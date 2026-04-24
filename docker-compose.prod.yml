@@ -31,7 +31,7 @@ services:
     expose:
       - "4000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -54,6 +54,7 @@ services:
       MOODLE_PUBLIC_URL: http://${LMS_DOMAIN}:8080
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_SSO_SECRET: ${MOODLE_SSO_SECRET}
+      MOODLE_DEFAULT_COURSE_CATEGORY_ID: ${MOODLE_DEFAULT_COURSE_CATEGORY_ID:-}
       MOODLE_SERVICE_NAME: ${MOODLE_SERVICE_NAME:-Sunshine_BE}
       # Auth
       JWT_SECRET: ${JWT_SECRET}

@@ -202,10 +202,11 @@ public class MoodleSyncService {
         }
 
         String shortname = "SSO-" + course.getId();
+        String categoryId = resolveMoodleCategoryId(course);
         long moodleCourseId = moodleClient.createCourse(
                 course.getName(),
                 shortname,
-                "1", // default category
+            categoryId,
                 course.getDescription()
         );
 
@@ -213,6 +214,46 @@ public class MoodleSyncService {
         courseRepository.save(course);
         log.info("Created Moodle course '{}' (moodleCourseId={})", course.getName(), moodleCourseId);
         return moodleCourseId;
+    }
+
+    private String resolveMoodleCategoryId(Course course) {
+        String localCategoryName = getLocalCategoryName(course);
+        if (localCategoryName != null) {
+            JsonNode moodleCategories = moodleClient.getCourseCategories();
+            if (moodleCategories != null && moodleCategories.isArray()) {
+                for (JsonNode moodleCategory : moodleCategories) {
+                    String moodleCategoryName = moodleCategory.path("name").asText("").trim();
+                    String moodleCategoryId = moodleCategory.path("id").asText("").trim();
+                    if (!moodleCategoryName.isBlank()
+                            && !moodleCategoryId.isBlank()
+                            && moodleCategoryName.equalsIgnoreCase(localCategoryName)) {
+                        return moodleCategoryId;
+                    }
+                }
+            }
+        }
+
+        String fallbackCategoryId = moodleProperties.getDefaultCourseCategoryId();
+        if (fallbackCategoryId != null && !fallbackCategoryId.isBlank()) {
+            return fallbackCategoryId;
+        }
+
+        throw new MoodleApiException("Cannot resolve Moodle category id for course '"
+                + course.getName() + "'"
+                + (localCategoryName != null ? " (category='" + localCategoryName + "')" : "")
+                + ". Configure MOODLE_DEFAULT_COURSE_CATEGORY_ID or create a Moodle course in the target category first.");
+    }
+
+    private String getLocalCategoryName(Course course) {
+        if (course.getCategoryEntity() != null
+                && course.getCategoryEntity().getName() != null
+                && !course.getCategoryEntity().getName().isBlank()) {
+            return course.getCategoryEntity().getName().trim();
+        }
+        if (course.getCategory() != null && !course.getCategory().isBlank()) {
+            return course.getCategory().trim();
+        }
+        return null;
     }
 
     /* ─────────── Enrolment sync ────────────────────────────── */

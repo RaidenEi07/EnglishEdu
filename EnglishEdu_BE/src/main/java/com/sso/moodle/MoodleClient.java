@@ -353,6 +353,13 @@ public class MoodleClient {
     }
 
     /**
+     * Get all Moodle course categories. Returns a JSON array of category objects.
+     */
+    public JsonNode getCourseCategories() {
+        return call("core_course_get_categories", Map.of());
+    }
+
+    /**
      * Get course contents (sections, activities, resources).
      */
     public JsonNode getCourseContents(long moodleCourseId) {
