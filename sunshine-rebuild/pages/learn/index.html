@@ -70,6 +70,16 @@
 
             <!-- Main content area -->
             <main id="learnMain" class="learn-main flex-grow-1 overflow-auto">
+
+                <!-- Persistent audio panel for listening quizzes (outside contentBody so it survives page navigation) -->
+                <div id="quizAudioPanel" class="d-none quiz-audio-panel px-4 py-3 border-bottom bg-light">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fa fa-headphones text-info me-2"></i>
+                        <strong class="text-info small">Audio bài nghe — tiếp tục phát khi chuyển trang</strong>
+                    </div>
+                    <div id="quizAudioContent"></div>
+                </div>
+
                 <!-- Welcome / placeholder -->
                 <div id="contentWelcome" class="text-center py-5">
                     <i class="fa fa-book-open fa-3x text-muted mb-3"></i>

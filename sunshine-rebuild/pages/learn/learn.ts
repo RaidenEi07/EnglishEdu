@@ -35,6 +35,9 @@ let completionMap: Record<number, boolean> = {};
 let activeModuleId: number | null = null;
 let moodleToken: string = '';
 let moodleBaseUrl: string = '';
+// Persistent audio for listening quizzes (survives quiz page navigation)
+let persistentQuizAudio: string = '';
+let persistentQuizAttemptId: number = 0;
 
 /* ── Module type → icon mapping ───────────────── */
 const modIcon: Record<string, string> = {
@@ -166,6 +169,9 @@ function selectModule(modId: number, modname: string): void {
   document.getElementById('learnSidebar')?.classList.remove('show-mobile');
   document.getElementById('sidebarOverlay')?.classList.add('d-none');
 
+  // Hide persistent audio when navigating away from a listening quiz
+  if (modname !== 'quiz') hideQuizAudioPanel();
+
   // Find the module data
   let mod: any = null;
   for (const sec of sections) {
@@ -205,6 +211,26 @@ function showContent(html: string): void {
   hide('contentWelcome'); hide('contentLoading'); hide('contentError');
   document.getElementById('contentBody')!.innerHTML = html;
   show('contentArea');
+}
+
+function showQuizAudioPanel(audioHtml: string): void {
+  const content = document.getElementById('quizAudioContent');
+  const panel = document.getElementById('quizAudioPanel');
+  if (content && panel) {
+    content.innerHTML = audioHtml;
+    panel.classList.remove('d-none');
+  }
+}
+
+function hideQuizAudioPanel(): void {
+  const panel = document.getElementById('quizAudioPanel');
+  if (panel) {
+    panel.classList.add('d-none');
+    const content = document.getElementById('quizAudioContent');
+    if (content) content.innerHTML = '';
+  }
+  persistentQuizAudio = '';
+  persistentQuizAttemptId = 0;
 }
 
 /* ── Module Renderers ─────────────────────────── */
@@ -699,11 +725,36 @@ async function startQuiz(quizId: number, quizName: string): Promise<void> {
 }
 
 async function loadQuizPage(attemptId: number, page: number, quizName: string): Promise<void> {
+  // Reset audio cache when starting a fresh attempt
+  if (page === 0 || attemptId !== persistentQuizAttemptId) {
+    persistentQuizAudio = '';
+    persistentQuizAttemptId = attemptId;
+    hideQuizAudioPanel();
+  }
+
   showContentLoading();
   try {
     const data = await apiGet<any>(`/moodle/quiz/attempt-data?attemptId=${attemptId}&page=${page}`);
     const questions = data?.questions || [];
     const nextPage = data?.nextpage ?? -1;
+
+    // On page 0, extract <audio> elements from question HTML and persist them
+    // so they keep playing while the student navigates to later pages
+    if (page === 0) {
+      const parser = new DOMParser();
+      let audioHtml = '';
+      for (const q of questions) {
+        const sanitized = sanitizeHtml(q.html || '');
+        const doc = parser.parseFromString(sanitized, 'text/html');
+        doc.querySelectorAll('audio').forEach(audio => {
+          audioHtml += audio.outerHTML;
+        });
+      }
+      if (audioHtml) {
+        persistentQuizAudio = audioHtml;
+        showQuizAudioPanel(audioHtml);
+      }
+    }
 
     let html = `
       <div class="quiz-container">
@@ -755,6 +806,7 @@ async function loadQuizPage(attemptId: number, page: number, quizName: string): 
       try {
         await apiPost('/moodle/quiz/submit', { attemptId, answers });
         toast.success('Đã nộp bài kiểm tra!');
+        hideQuizAudioPanel(); // Stop audio after submission
         await reviewQuiz(attemptId, quizName);
       } catch (err: any) {
         showContentError(err.message || 'Nộp bài thất bại.');
