@@ -5,6 +5,87 @@
 
 ---
 
+## [Unreleased] — Hoàn thiện Module Audio & Split Reading (2026-05-13)
+
+### Improvements
+
+#### Moodle Plugins — Fix `is_real_question_type()` & thêm `db/install.xml`
+- **Fix:** `qtype_sectionaudio/questiontype.php` — `is_real_question_type()` → `false` (plugin không tính điểm)
+- **Fix:** `qtype_splitreading/questiontype.php` — Tương tự
+- **Thêm:** `is_manual_graded()` → `false`, `actual_number_of_questions()` → `0`
+- **Thêm:** `db/install.xml` rỗng cho cả 2 plugins (Moodle best practice)
+
+#### Frontend — Robust type detection (`learn.ts`)
+- **Thêm:** Helper functions `isSectionAudio()`, `isSplitReading()` — detect bằng cả `q.type` và HTML class names (regex fallback)
+- **Thêm:** `extractAudioHtml()` — tách logic extract audio riêng biệt
+- **Fix:** Audio detection hoạt động trên **tất cả pages** (không chỉ page 0)
+- **Fix:** Audio panel persist khi chuyển trang (không reset ở page > 0)
+- **Fix:** Review mode ẩn sectionaudio, giữ split-screen layout
+- **Fix:** Defensive `Array.isArray()` check cho Moodle course-contents API response (fix lỗi "L is not iterable")
+
+#### Frontend — Enhanced CSS (`learn.css`)
+- **Thêm:** `.split-reading-header` — gradient header với icon và text "Bài đọc"
+- **Thêm:** Scroll indicator (thin scrollbar) cho reading pane
+- **Thêm:** Mobile responsive — reading pane collapsible (max-height: 40vh)
+- **Thêm:** `.quiz-review .split-screen-container` — support split-screen trong review mode
+- **Fix:** Loại bỏ duplicate audio panel CSS
+
+---
+
+## [Unreleased] — Custom Moodle Question Types: Audio Xuyên Trang & Reading Chia Màn Hình (2026-05-04)
+
+### New Features
+
+#### Plugin `qtype_sectionaudio` — Audio phát liên tục xuyên trang quiz
+- **Thêm Moodle plugin:** Loại câu hỏi mới "Audio Xuyên Trang" xuất hiện trong menu "Add Question" của Moodle
+- **Kế thừa từ:** `qtype_description` — không tính điểm, chỉ chứa nội dung (file MP3)
+- **Files:** `version.php`, `questiontype.php`, `question.php`, `renderer.php`, `edit_sectionaudio_form.php`, `lang/en/qtype_sectionaudio.php`
+- **Đường dẫn:** `moddle-lms/custom_plugins/qtype_sectionaudio/`
+
+#### Plugin `qtype_splitreading` — Chia đôi màn hình cho bài đọc
+- **Thêm Moodle plugin:** Loại câu hỏi mới "Reading Chia Màn Hình" xuất hiện trong menu "Add Question" của Moodle
+- **Kế thừa từ:** `qtype_description` — chứa nội dung bài đọc dài, hiển thị bên trái màn hình
+- **Files:** `version.php`, `questiontype.php`, `question.php`, `renderer.php`, `edit_splitreading_form.php`, `lang/en/qtype_splitreading.php`
+- **Đường dẫn:** `moddle-lms/custom_plugins/qtype_splitreading/`
+
+#### `moddle-lms/Dockerfile` — Bake plugins vào Docker image
+- **Sửa:** Thêm lệnh `COPY` để copy 2 plugin vào `/opt/bitnami/moodle/question/type/`
+- **Sửa:** Thêm `chown` + `chmod` để fix quyền truy cập cho Bitnami UID 1001
+
+#### `sunshine-rebuild/pages/learn/learn.ts` — Frontend rendering logic
+- **Thêm:** Logic phát hiện `qtype_splitreading` → tự động chia đôi màn hình (bài đọc bên trái, câu hỏi bên phải)
+- **Thêm:** Logic phát hiện `qtype_sectionaudio` → trích xuất MP3 ra Audio Panel nổi + ẩn câu hỏi gốc
+
+#### `sunshine-rebuild/pages/learn/learn.css` — Split screen styles
+- **Thêm:** CSS cho `.split-screen-container`, `.split-reading-pane` (sticky, 50% width), `.split-questions-pane`
+- **Responsive:** Mobile stack dọc, desktop chia đôi ngang
+
+### Bugs Fixed
+
+#### Plugin files bị Bitnami volume ghi đè
+- **Fix CRITICAL:** Bitnami Moodle mount volume `/bitnami/moodle` → lần boot đầu copy code từ image vào volume, các lần sau **dùng lại volume cũ** mà không cập nhật. Plugin COPY trong Dockerfile bị volume cũ ghi đè.
+- **Fix:** Dùng `docker cp` copy trực tiếp vào container đang chạy + `php admin/cli/upgrade.php --non-interactive` để Moodle đăng ký plugin.
+
+#### Preview câu hỏi lỗi "Unknown question type"
+- **Fix HIGH:** Plugin ban đầu thiếu `question.php` (runtime class) và `renderer.php` (rendering class) → Moodle không thể khởi tạo instance câu hỏi khi preview hoặc làm bài.
+- **Fix:** Tạo `question.php` kế thừa `qtype_description_question` và `renderer.php` kế thừa `qtype_description_renderer`.
+
+#### 502 Bad Gateway sau khi restart backend
+- **Fix MEDIUM:** Nginx cache IP cũ của container backend sau khi restart → `connect() failed (111: Connection refused)`.
+- **Fix:** Restart Nginx container để force DNS re-resolve.
+
+### Deployment Notes
+
+> **Quan trọng:** Mỗi khi rebuild Moodle container, phải chạy lại:
+> ```bash
+> docker cp /root/EnglishEdu/moddle-lms/custom_plugins/qtype_sectionaudio englishedu-moodle-1:/opt/bitnami/moodle/question/type/sectionaudio
+> docker cp /root/EnglishEdu/moddle-lms/custom_plugins/qtype_splitreading englishedu-moodle-1:/opt/bitnami/moodle/question/type/splitreading
+> docker exec englishedu-moodle-1 bash -c "chown -R 1001:root /opt/bitnami/moodle/question/type/sectionaudio /opt/bitnami/moodle/question/type/splitreading"
+> docker exec englishedu-moodle-1 php /opt/bitnami/moodle/admin/cli/upgrade.php --non-interactive
+> ```
+
+---
+
 ## [Unreleased] — Fix Moodle HTTP Redirect & Student 500 Error (2026-04-19)
 
 ### Bugs Fixed

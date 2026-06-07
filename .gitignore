@@ -11,11 +11,6 @@ sunshine-rebuild/dist/
 # ── Backend build output ─────────────────────────────────────
 EnglishEdu_BE/target/
 
-# ── Moodle DB dump (large file – copy manually to server) ────
-# moddle-lms/moodle-db-export.sql   <- uncomment to exclude
-# If you want to keep it in git (22MB, within GitHub limits):
-# leave this commented out.
-
 # ── Logs & temp ──────────────────────────────────────────────
 *.log
 hts-log.txt
@@ -34,12 +29,54 @@ docker-compose.override.yml
 # ── HTTrack web crawl artifacts (not part of project) ────────
 sunshineschool.edu.vn/
 cdn.jsdelivr.net/
-hts-cache/
-hts-log.txt
-cookies.txt
 backblue.gif
 fade.gif
 
+# ── Root-level node_modules & deploy deps (local-only) ───────
+node_modules/
+package.json
+package-lock.json
+
+# ── Temporary deploy/fix/diag scripts (one-time use) ─────────
+deploy_fix.js
+deploy_frontend.js
+deploy_plugins_fix.js
+fix_backend.js
+fix_nginx.js
+rebuild_moodle.js
+ssh_deploy.js
+install_plugins.js
+upload.js
+upload_fix.js
+upload_tar.js
+health_check.js
+check_err.js
+check_plugin.js
+check_volumes.js
+
+# ── Temporary server-side scripts (PHP/Shell) ────────────────
+check_qbehaviour.php
+fix_qbehaviour.php
+delete_questions_keep_categories.php
+diag_qrefs.php
+diag_quiz_structure.php
+setup_preptest_import_v2.php
+upload_audio_questions.php
+verify_moodle_state.php
+diag-quiz-access.sh
+diag2-service.sh
+fix-deep-diagnosis.sh
+fix-quiz-enrol.sh
+fix-role7-capability.sh
+fix-student-password.sh
+fix-student-suspended.sh
+fix-webservice-capability.sh
+test-backend-quiz-flow.sh
+test-full-quiz-flow.sh
+test-quiz-flow.sh
+
+# ── Compressed archives (deploy artifacts) ───────────────────
+*.tar.gz
 
 # ── Offline teaching materials (not part of codebase) ────────
 4. UPPER/

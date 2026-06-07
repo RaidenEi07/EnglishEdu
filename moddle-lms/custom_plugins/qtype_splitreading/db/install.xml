@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="question/type/splitreading/db" VERSION="20230504" COMMENT="XMLDB file for Moodle question/type/splitreading">
+  <TABLES>
+  </TABLES>
+</XMLDB>
