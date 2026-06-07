@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"c:\\\\My Web Sites\\\\EnglishEdu\\\\EnglishEdu_BE\" -Force | Select-Object Name, @{Name='Type';Expression={if\\($_.PSIsContainer\\){'Directory'}else{'File'}}} | Format-Table -AutoSize)",
+      "WebFetch(domain:sunshineschool.edu.vn)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}
